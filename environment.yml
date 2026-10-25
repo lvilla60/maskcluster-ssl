@@ -1,0 +1,8 @@
+﻿name: MaskCluster_SSL
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+# Base portable. Install the pinned project dependencies with this environment's
+# Python after selecting the official CPU or CUDA PyTorch wheel index.

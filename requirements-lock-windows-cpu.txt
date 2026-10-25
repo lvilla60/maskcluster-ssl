@@ -1,0 +1,12 @@
+# Verified in the existing Windows/CPU MaskCluster_SSL environment on
+# 2026-10-25. This is not the future Linux/GPU lock for Khipu.
+torch==2.14.1+cpu
+torchvision==0.29.1+cpu
+numpy==2.4.6
+h5py==3.16.0
+Pillow==13.0.0
+PyYAML==6.0.3
+tqdm==4.70.1
+matplotlib==3.11.2
+pandas==3.1.0
+pytest==9.1.1

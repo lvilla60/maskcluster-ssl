@@ -1,0 +1,25 @@
+# Contrato inicial de organizacion; no ejecuta entrenamiento.
+project: MaskCluster_SSL
+seed: 42
+data:
+  root: Input/raw
+  training: training.h5
+  validation: validation.h5
+  testing: testing.h5
+runtime:
+  num_workers: 0
+  device: auto
+protocol:
+  train_identity_labels: false
+  selection_split: validation
+  selection_metric: mean_map_original_and_low_resolution
+  l2_normalize: true
+  similarity: cosine
+  conditions: [original, low_resolution_query]
+experiments:
+  baseline: global_clustering_and_me_max
+  full: global_patch_clustering_me_max_and_reconstruction
+  ablation: global_patch_clustering_without_reconstruction
+  compare_encoders: [student, teacher]
+# Arquitectura concreta, pesos iniciales, resolucion, numero de prototipos,
+# temperaturas, batch size y epocas se fijan tras auditar datos y hardware.

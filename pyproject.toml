@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maskcluster-ssl"
+version = "0.1.0"
+description = "Adaptacion academica de MaskCluster a reidentificacion de personas"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy==2.4.6",
+  "h5py==3.16.0",
+  "Pillow==13.0.0",
+  "PyYAML==6.0.3",
+  "tqdm==4.70.1",
+  "matplotlib==3.11.2",
+  "pandas==3.1.0",
+  "torch==2.14.1",
+  "torchvision==0.29.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "ipykernel", "jupyterlab"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+# No se registran comandos CLI hasta implementar los scripts correspondientes.
