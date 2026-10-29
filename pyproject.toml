@@ -15,8 +15,10 @@ dependencies = [
   "tqdm==4.70.1",
   "matplotlib==3.11.2",
   "pandas==3.1.0",
-  "torch==2.14.1",
-  "torchvision==0.29.1",
+  "torch==2.11.0; sys_platform == 'linux'",
+  "torch==2.14.1; sys_platform != 'linux'",
+  "torchvision==0.26.0; sys_platform == 'linux'",
+  "torchvision==0.29.1; sys_platform != 'linux'",
 ]
 
 [project.optional-dependencies]
