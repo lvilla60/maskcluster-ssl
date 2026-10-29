@@ -1,0 +1,64 @@
+# Set the same budget in all three files after the pilot; then set budget_status: frozen.
+seed: 42
+output_dir: outputs/comparative
+data:
+  training: Input/raw/training.h5
+  validation: Input/raw/validation.h5
+runtime:
+  device: auto
+  num_workers: 0
+  amp: true
+model:
+  variant: baseline
+  image_size:
+  - 128
+  - 64
+  local_size:
+  - 96
+  - 48
+  local_crops: 4
+  patch_size: 16
+  embed_dim: 384
+  depth: 12
+  num_heads: 6
+  mlp_ratio: 4.0
+  prototypes: 1024
+  mask_ratio: 0.5
+  reconstruction_layers:
+  - 6
+  - 8
+  - 10
+  - 12
+  attention_mode: visible
+  photometric:
+    photometric: true
+    brightness: 0.15
+    contrast: 0.15
+    saturation: 0.1
+    grayscale_probability: 0.05
+loss:
+  student_temperature: 0.1
+  teacher_temperature: 0.04
+  me_max_temperature: 0.1
+  weights:
+    global_clustering: 1.0
+    patch_clustering: 1.0
+    reconstruction: 1.0
+    global_me_max: 1.0
+    patch_me_max: 1.0
+training:
+  epochs: null
+  batch_size: null
+  learning_rate: 0.0001
+  minimum_learning_rate: 1.0e-06
+  weight_decay: 0.05
+  warmup_epochs: 0
+  gradient_clip: 3.0
+  ema_momentum: 0.996
+  ema_momentum_final: 1.0
+evaluation:
+  every_epochs: 1
+  batch_size: 128
+  query_block_size: 64
+purpose: comparative
+budget_status: pending_pilot

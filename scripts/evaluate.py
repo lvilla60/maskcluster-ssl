@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from maskcluster_ssl.data.hdf5 import ReIDH5Dataset
-from maskcluster_ssl.data.provenance import evaluation_provenance
+from maskcluster_ssl.data.provenance import evaluation_provenance, file_signature
 from maskcluster_ssl.data.transforms import EvalTransform, IMAGENET_MEAN, IMAGENET_STD
 from maskcluster_ssl.evaluation.extract import extract_embeddings
 from maskcluster_ssl.evaluation.reid import evaluate_reid, summarize_conditions
@@ -38,6 +38,10 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     device = select_device(args.device)
     state = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    run_dir = Path(args.checkpoint).resolve().parent
+    def run_json(name):
+        path = run_dir / name
+        return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
     config = state["config"]
     m = config["model"]
     model = MaskClusterSSL(variant=m["variant"], image_size=m["image_size"], patch_size=m["patch_size"],
@@ -84,11 +88,22 @@ def main():
         report = {"split": args.split, "checkpoint": str(Path(args.checkpoint).resolve()),
                   "run_id": Path(args.checkpoint).resolve().parent.name,
                   "variant": m["variant"], "encoder": args.encoder,
+                  "seed": config["seed"], "epoch": state.get("epoch"),
+                  "global_step": state.get("global_step"),
+                  "checkpoint_signature": file_signature(args.checkpoint),
+                  "training_data_signatures": state.get("data_signatures"),
+                  "selection_rule": "highest mean of original-query and low-resolution-query validation mAP",
+                  "purpose": config.get("purpose", "unclassified"),
+                  "run_summary": run_json("summary.json"),
+                  "run_metadata": run_json("run_metadata.json"),
                   "config": config, "data": data_provenance, "protocol": protocol,
                   "metrics": metrics, "cases": cases,
                   "ranking_limit": args.ranking_limit}
         (output / "metrics.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-        write_metrics_csv(output / "metrics.csv", report["run_id"], m["variant"], args.encoder, metrics)
+        provenance = {key: report[key] for key in ("seed", "epoch", "global_step", "checkpoint", "purpose", "selection_rule")}
+        provenance.update({key: json.dumps(report[key], sort_keys=True) for key in
+                           ("config", "protocol", "data", "checkpoint_signature", "training_data_signatures")})
+        write_metrics_csv(output / "metrics.csv", report["run_id"], m["variant"], args.encoder, metrics, provenance)
         print(json.dumps({"metrics": metrics, "cases": cases}, indent=2))
     finally:
         gallery.close()

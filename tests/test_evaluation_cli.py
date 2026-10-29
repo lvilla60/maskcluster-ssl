@@ -67,6 +67,12 @@ def test_evaluation_cli_validation_fixture():
                   "--output", str(folder / "two.csv"), "--allow-partial"]
     assert subprocess.run(comparison, cwd=root, capture_output=True, text=True).returncode == 0
 
+    incompatible = json.loads(json.dumps(second))
+    incompatible["config"]["training"]["batch_size"] *= 2
+    second_path.write_text(json.dumps(incompatible), encoding="utf-8")
+    result = subprocess.run(comparison, cwd=root, capture_output=True, text=True)
+    assert result.returncode != 0 and "Incompatible training budget" in result.stderr
+
     for field, replacement in (("gallery_sha256", "different gallery"),
                                ("preprocessing", {"input_size": [64, 32]}),
                                ("source_file", {"sha256": "different file", "size_bytes": 1})):

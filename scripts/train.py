@@ -33,15 +33,21 @@ def parse_args():
     parser.add_argument("--config", default="configs/train.yaml")
     parser.add_argument("--variant", choices=sorted(VARIANTS))
     parser.add_argument("--resume")
+    parser.add_argument("--max-epochs-per-invocation", type=int,
+                        help="Stop successfully after this many completed epochs; keep the full schedule")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.max_epochs_per_invocation is not None and args.max_epochs_per_invocation < 1:
+        raise ValueError("--max-epochs-per-invocation must be positive")
     config_path = within_root(args.config, ROOT)
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     if args.variant:
         config["model"]["variant"] = args.variant
+    if config.get("budget_status") == "pending_pilot":
+        raise ValueError("Freeze the common batch and epoch budget after the pilot before training")
     training_path = within_root(config["data"]["training"], ROOT)
     validation_path = within_root(config["data"]["validation"], ROOT)
     config["data"]["training"] = str(training_path)
@@ -53,7 +59,9 @@ def main() -> int:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"{timestamp}_{config['model']['variant']}_{uuid.uuid4().hex[:8]}"
     run_dir = within_root(Path(config["output_dir"]) / run_id, ROOT)
-    write_run_metadata(run_dir, config, ROOT, data_signatures=data_signatures)
+    write_run_metadata(run_dir, config, ROOT, data_signatures=data_signatures,
+                       execution_options={"max_epochs_per_invocation": args.max_epochs_per_invocation,
+                                          "resume": args.resume})
 
     model_config = config["model"]
     transform = MultiCropTransform(
@@ -104,7 +112,10 @@ def main() -> int:
                       data_signatures=data_signatures)
     if args.resume:
         trainer.resume(within_root(args.resume, ROOT))
-    summary = trainer.fit()
+    try:
+        summary = trainer.fit(max_epochs_per_invocation=args.max_epochs_per_invocation)
+    finally:
+        dataset.close()
     print(yaml.safe_dump(summary, sort_keys=False))
     return 0
 

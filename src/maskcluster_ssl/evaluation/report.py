@@ -86,11 +86,12 @@ def export_cases(validation_path, condition, records, output_dir, *, count=5, co
     return {key: {"requested": count, "available": len(items)} for key, items in selections.items()}
 
 
-def write_metrics_csv(path, run_id, variant, encoder, conditions):
+def write_metrics_csv(path, run_id, variant, encoder, conditions, provenance=None):
+    provenance = provenance or {}
     with Path(path).open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["run_id", "variant", "encoder", "condition", "mAP", "rank1", "rank5", "rank10", "valid_queries", "excluded_queries", "mAP_drop_percentage_points"])
+        writer = csv.DictWriter(handle, fieldnames=["run_id", "variant", "encoder", "condition", "mAP", "rank1", "rank5", "rank10", "valid_queries", "excluded_queries", "mAP_drop_percentage_points", *provenance])
         writer.writeheader()
         for name in ("original", "low_resolution"):
             writer.writerow({"run_id": run_id, "variant": variant, "encoder": encoder,
                              "condition": name, **conditions[name],
-                             "mAP_drop_percentage_points": conditions["mAP_drop_percentage_points"]})
+                             "mAP_drop_percentage_points": conditions["mAP_drop_percentage_points"], **provenance})

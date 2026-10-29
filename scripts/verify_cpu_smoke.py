@@ -282,7 +282,8 @@ def main() -> int:
     run_dir = within_root(Path(config["output_dir"]) / run_id, ROOT)
     write_run_metadata(run_dir, config, ROOT)
 
-    report = {"run_id": run_id, "variants": {}, "total_optimization_steps": 0}
+    report = {"run_id": run_id, "purpose": "smoke", "diagnostic_only": True,
+              "variants": {}, "total_optimization_steps": 0}
     full_model = None
     for variant in config["smoke"]["variants"]:
         variant_dir = run_dir / variant
@@ -291,6 +292,9 @@ def main() -> int:
         batch = real_batch(training_path, config, config["model"], config["training"]["batch_size"])
         model, result = verify_variant(variant, batch, config, variant_dir, device)
         report["variants"][variant] = result
+        result["validation_subset"] = verify_validation_subset(model, validation_path, config, device)
+        result["parameters"] = {"total": sum(p.numel() for p in model.parameters()),
+                                "trainable": sum(p.numel() for p in model.parameters() if p.requires_grad)}
         report["total_optimization_steps"] += result["optimization_steps"]
         if variant == "full":
             full_model = model

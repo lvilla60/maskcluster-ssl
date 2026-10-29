@@ -6,7 +6,7 @@ A self-supervised person re-identification project that combines **visual cluste
 
 Built on Market-1501, this project adapts *Investigating Self-Supervised Methods for Label-Efficient Learning* to image-only retrieval. The central method is implemented locally with PyTorch primitives.
 
-**Current milestone:** CPU implementation and bounded integration checks completed. **27 tests pass**; two checks remain skipped for CUDA and Windows worker permissions. GPU validation, training experiments, and final test evaluation are next.
+**Current milestone:** staged execution and output checks completed locally. **34 tests pass**; three checks are skipped for CUDA and Windows worker permissions. CUDA verification of this version and comparative experiments remain pending.
 
 ## 1. Project objectives
 
@@ -124,7 +124,7 @@ python -m pip check
 
 The verified Windows CPU environment uses PyTorch `2.14.1+cpu` and torchvision `0.29.1+cpu`. Direct dependency pins are recorded in `requirements-lock-windows-cpu.txt`; runs also record the full installed-package inventory.
 
-Khipu requires a separate Linux/GPU environment. Select the appropriate PyTorch CUDA build for the assigned hardware before installing the project and record the resulting environment. The Windows CPU pins are not a verified Linux/CUDA lock.
+Khipu already has a separate Linux/GPU environment. Keep its agreed dependencies; the Windows CPU pins are not a Linux/CUDA lock. Metadata records the actual package inventory and leaves the direct lock unset when no verified platform/build lock applies.
 
 Run the test suite and bounded real-data check:
 
@@ -165,12 +165,38 @@ Reports identify the actual HDF5 file, gallery signature, group sizes, and prepr
 
 ## 10. Verification milestone and next steps
 
-**Verified locally:** 27 passing tests, a three-step real-data smoke check—one step per variant—and a separate forward/backward pass through the planned ViT-S/16 backbone. Evaluation exports were checked with synthetic validation fixtures.
+**Verified locally:** 34 passing tests, including synthetic staged/continuous equivalence, overflow failure and epoch records. The final real-data smoke performed one step per variant and a separate ViT-S/16 forward/backward without an optimizer step. Evaluation exports were checked with synthetic validation fixtures.
 
-**Pending on Khipu:** CUDA/AMP execution, checkpoint continuation on GPU, persistent workers, memory profiling, and a short training pilot. GPU and Windows worker checks account for the two skipped tests.
+**Khipu status reported by the user:** Python 3.11, torch 2.11.0+cu128 and torchvision 0.26.0+cu128. Pilot 59002 completed one epoch and 1,380 steps using the earlier code. Short shared-GPU batch measurements are still in progress; the comparative batch remains undecided. Neither the pilot nor earlier CUDA checks validate this new version. No remote files were accessed.
 
 **Experimental results are not available yet.** Next, train comparable variants, select configurations on validation, evaluate the reserved test partition, and analyze retrieval successes, failures, and resolution sensitivity.
 
 ## Reference
 
 Nandam et al. (2025). *Investigating Self-Supervised Methods for Label-Efficient Learning*. International Journal of Computer Vision, 133, 4522–4537. [Paper](https://doi.org/10.1007/s11263-025-02397-4).
+
+## Ablation output review
+
+Use `configs/smoke_staged_review.yaml` for the latest bounded verification. `configs/pilot_reference.yaml` is a local reference, not the configuration file used by Khipu. The three `configs/comparative_*.yaml` files share all settings except the variant. Their batch and epoch budgets are unset and training is blocked until a common budget is selected and `budget_status` is set to `frozen`. Start each variant from its own seeded initialization.
+
+Epoch history records weighted loss components, final step learning rate, step counts and wall times for training and validation. Resume into a new run preserves source history through the checkpoint boundary and existing best checkpoints. Keep the source run directory with its checkpoint; resuming an older checkpoint when a best checkpoint is newer is rejected.
+
+Export completed epoch curves with `scripts/export_history.py --run RUN --output NEW_OUTPUT`. It reads existing logs only and rejects smoke steps as epochs. `scripts/compare_results.py` exports a table and resolution comparison figures; final comparisons require all six reports, matching scientific configuration, data/protocol, source version and completed common budgets. Selected epochs may differ under the same validation selection rule. `--allow-partial` produces draft diagnostics, while still checking compatibility.
+
+Windows commands must explicitly use the project interpreter:
+
+```powershell
+& "C:\Users\daryl\anaconda3\envs\MaskCluster_SSL\python.exe" -B -m pytest tests -q -p no:cacheprovider
+& "C:\Users\daryl\anaconda3\envs\MaskCluster_SSL\python.exe" -B scripts/verify_cpu_smoke.py --config configs/smoke_ablation_review.yaml --device cpu
+& "C:\Users\daryl\anaconda3\envs\MaskCluster_SSL\python.exe" -B scripts/export_history.py --run RUN --output NEW_OUTPUT
+```
+
+The review report is `outputs/audit/ablation_outputs_review.md`. Synthetic export fixtures live under `outputs/audit/synthetic`; real-data smoke exports are diagnostic only. No completed training epoch or final test evaluation was run locally in this review.
+
+## Staged execution
+
+Keep `training.epochs` fixed at the total planned budget. `--max-epochs-per-invocation 10` stops successfully after at most ten additional epochs, saving `last.pt`, history, best checkpoints and a paused summary. Resume with the same config and `--resume RUN/last.pt`; the LR/EMA schedule still spans the original total. Changing the total on resume remains forbidden. Recovery is from completed epochs, not interrupted batches.
+
+Non-finite unscaled gradients fail before the optimizer; this strict policy does not use AMP overflow backoff. EMA and step counters advance only after confirmed optimizer execution. Epoch records include processed images, steps, throughput, training/validation times and process CUDA allocated/reserved peaks. Git commit, dirty state and source-byte hash are recorded separately.
+
+See [staged execution and transfer commands](docs/STAGED_EXECUTION.md) for verification on the existing Khipu environment and a 20-epoch run split into two invocations of ten.

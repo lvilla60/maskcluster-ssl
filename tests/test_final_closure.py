@@ -1,6 +1,7 @@
 """Regression checks for checkpoint portability and validation selection."""
 
 import copy
+import json
 import uuid
 from pathlib import Path
 
@@ -54,6 +55,9 @@ def test_trainer_cpu_checkpoint_initializes_enabled_scaler_and_rejects_corruptio
     resumed = _trainer(resume_dir, config)
     resumed.scaler = torch.amp.GradScaler("cpu", enabled=True)
     resumed.resume(path)
+    assert any(json.loads(line).get("event") == "epoch" for line in
+               (resume_dir / "history.jsonl").read_text().splitlines())
+    assert (resume_dir / "best_teacher.pt").exists()
     assert '"scaler": "initialized_no_amp_state"' in (resume_dir / "history.jsonl").read_text()
 
     absent = copy.deepcopy(saved)
