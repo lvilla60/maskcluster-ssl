@@ -1,0 +1,40 @@
+{
+  "completed_training_epochs": 30,
+  "original_planned_epochs": 40,
+  "selection_basis": "validation only",
+  "testing_file": "Input/raw/testing.h5",
+  "checkpoints": [
+    {
+      "variant": "full",
+      "encoder": "teacher",
+      "checkpoint": "outputs/comparative/staged_20261029_052556/runs/20261029T102623Z_full_95e384ed/best_teacher.pt",
+      "sha256": "f968c0f70b759bc1ed988e92802b1298df04837b0b0bc79c883c78f15d4a62e0",
+      "best_validation_mean_mAP": 0.09788731093675412,
+      "selected_encoder_by_validation": "student"
+    },
+    {
+      "variant": "full",
+      "encoder": "student",
+      "checkpoint": "outputs/comparative/staged_20261029_052556/runs/20261029T102623Z_full_95e384ed/best_student.pt",
+      "sha256": "ac071d2f642141edf7662d64e6173a9b61d3b0a1ef08a468fa3ea11f57715bc0",
+      "best_validation_mean_mAP": 0.10052222120273172,
+      "selected_encoder_by_validation": "student"
+    },
+    {
+      "variant": "no_mim",
+      "encoder": "teacher",
+      "checkpoint": "outputs/comparative/staged_20261029_052556/runs/20261029T132722Z_no_mim_ba20645d/best_teacher.pt",
+      "sha256": "790c8c2b14b4a2aff2df2988d27a67f2a5f006baa7daa41c18bedb09ac5ea3a2",
+      "best_validation_mean_mAP": 0.09687322868064197,
+      "selected_encoder_by_validation": "student"
+    },
+    {
+      "variant": "no_mim",
+      "encoder": "student",
+      "checkpoint": "outputs/comparative/staged_20261029_052556/runs/20261029T132722Z_no_mim_ba20645d/best_student.pt",
+      "sha256": "524af5f16716c4659c41d13e17c0dba52b42f4533959a8e94e4ac68553727c6e",
+      "best_validation_mean_mAP": 0.10732297296182847,
+      "selected_encoder_by_validation": "student"
+    }
+  ]
+}

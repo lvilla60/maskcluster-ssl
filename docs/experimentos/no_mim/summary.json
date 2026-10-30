@@ -1,0 +1,59 @@
+{
+  "completed_epochs": 30,
+  "start_epoch": 0,
+  "epochs_this_invocation": 30,
+  "max_epochs_per_invocation": 30,
+  "paused": true,
+  "status": "paused",
+  "global_step": 2580,
+  "planned_epochs": 40,
+  "steps_per_epoch": 86,
+  "best_scores_mean_mAP": {
+    "teacher": 0.09687322868064197,
+    "student": 0.10732297296182847
+  },
+  "selected_encoder": "student",
+  "selection_rule": "highest mean of original-query and low-resolution-query validation mAP",
+  "last_validation": {
+    "teacher": {
+      "original": {
+        "mAP": 0.09450675550099627,
+        "rank1": 0.16,
+        "rank5": 0.32,
+        "rank10": 0.4,
+        "valid_queries": 100,
+        "excluded_queries": 0
+      },
+      "low_resolution": {
+        "mAP": 0.09923970186028766,
+        "rank1": 0.16,
+        "rank5": 0.35,
+        "rank10": 0.37,
+        "valid_queries": 100,
+        "excluded_queries": 0
+      },
+      "mean_mAP": 0.09687322868064197,
+      "mAP_drop_percentage_points": -0.473294635929139
+    },
+    "student": {
+      "original": {
+        "mAP": 0.09637500253404097,
+        "rank1": 0.13,
+        "rank5": 0.33,
+        "rank10": 0.44,
+        "valid_queries": 100,
+        "excluded_queries": 0
+      },
+      "low_resolution": {
+        "mAP": 0.09935505575318886,
+        "rank1": 0.16,
+        "rank5": 0.32,
+        "rank10": 0.39,
+        "valid_queries": 100,
+        "excluded_queries": 0
+      },
+      "mean_mAP": 0.09786502914361492,
+      "mAP_drop_percentage_points": -0.29800532191478907
+    }
+  }
+}

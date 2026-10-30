@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaskCluster · Explorador del método del artículo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#3b82f6',
+                            emerald: '#10b981',
+                            purple: '#8b5cf6',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            indigo: '#6366f1',
+                            darkBg: '#080c14',
+                            cardBg: '#0f172a',
+                            border: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080c14;
+            color: #f3f4f6;
+        }
+        code, pre {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* SVG Node & Path Interactive States */
+        .node-group {
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.25s ease;
+        }
+        .node-group rect {
+            transition: stroke 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+        }
+        .node-group:hover rect {
+            stroke-width: 2.5px;
+            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+        }
+        .node-active rect {
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.85)) !important;
+        }
+        .node-dimmed {
+            opacity: 0.25 !important;
+        }
+
+        /* Path Styling & Highlights */
+        .connection-path {
+            transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
+        }
+        .path-active {
+            stroke-width: 3px !important;
+            stroke: #60a5fa !important;
+            filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.8));
+        }
+        .path-dimmed {
+            opacity: 0.15 !important;
+        }
+
+        /* Stage Labels & Typography */
+        .stage-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            fill: #64748b;
+            text-transform: uppercase;
+        }
+        .lane-title {
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .path-text {
+            font-size: 8.5px;
+            font-weight: 600;
+            fill: #94a3b8;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080c14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Canvas Pan Container */
+        #svg-wrapper {
+            transform-origin: 0 0;
+            transition: transform 0.1s linear;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden select-none">
+
+
+    <details style="flex-shrink:0;background:#102235;color:#e2e8f0;border-bottom:1px solid #345;padding:8px 24px;font:13px/1.5 sans-serif;max-height:28vh;overflow:auto">
+      <summary style="cursor:pointer;font-weight:600">Referencia del artículo original · Diferencias con el experimento del laboratorio</summary>
+      <p>Este explorador explica el preentrenamiento y las tareas de transferencia del artículo de Nandam et al. (2025). Las dimensiones, hiperparámetros y puntuaciones de transferencia mostrados pertenecen a ese contexto, no a nuestras ejecuciones de reidentificación. Los fragmentos de código son esquemas explicativos.</p>
+      <p><strong>Artículo:</strong> globales 224 × 224; 10 locales 96 × 96; 8 192 prototipos; lote 512. <strong>Laboratorio:</strong> globales 128 × 64; 4 locales 96 × 48; 1 024 prototipos; lote 128; 30 épocas ejecutadas de un calendario de 40.</p>
+      <p>La adaptación usa decoder MLP y L1 media. La atención visible se implementa con una máscara densa: no se ha demostrado ahorro computacional por ese mecanismo. La ablación Sin MIM conserva el agrupamiento y elimina el objetivo de reconstrucción. La evaluación final usa CLS normalizado L2 y similitud coseno; no ejecuta las tareas de clasificación o segmentación del diagrama.</p>
+      <p><a style="color:#7dd3fc" href="https://doi.org/10.1007/s11263-025-02397-4" target="_blank" rel="noopener noreferrer">Artículo de referencia</a> · <a style="color:#7dd3fc" href="https://github.com/lvilla60/maskcluster-ssl#resultados-finales" target="_blank" rel="noopener noreferrer">Resultados del laboratorio</a></p>
+      <p>El diseño utiliza Tailwind, Lucide, fuentes e imágenes externas; se necesita conexión a Internet para cargarlos.</p>
+    </details>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-6 py-2.5 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+                <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold text-white flex items-center gap-2">
+                    MaskCluster <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-normal">Método del artículo</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">Explorador Interactivo · Investigating Self-Supervised Methods for Label-Efficient Learning (IJCV 2025)</p>
+            </div>
+        </div>
+
+        <!-- Simulation & View Controls -->
+        <div class="flex items-center space-x-2 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
+            <!-- Animation Controls -->
+            <button id="btn-toggle-play" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1.5 shadow-md shadow-blue-600/20">
+                <i data-lucide="pause" class="w-3.5 h-3.5" id="icon-play-state"></i>
+                <span id="text-play-state">Pausar Flujo</span>
+            </button>
+
+            <div class="h-4 w-px bg-slate-800"></div>
+
+            <button id="btn-phase-all" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                Ver Todo
+            </button>
+            <button id="btn-phase-ssl" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                Fase 1: SSL Pretraining
+            </button>
+            <button id="btn-phase-downstream" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                Fase 2: Downstream
+            </button>
+
+            <div class="h-4 w-px bg-slate-800"></div>
+
+            <!-- Canvas Pan & Zoom Controls -->
+            <button id="btn-zoom-in" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Acercar (+)">
+                <i data-lucide="zoom-in" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-zoom-out" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Alejar (-)">
+                <i data-lucide="zoom-out" class="w-4 h-4"></i>
+            </button>
+            <button id="btn-reset-view" class="px-2 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1" title="Reiniciar vista">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Canvas Area -->
+        <div class="flex-1 relative bg-[#080c14] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing" id="canvas-container">
+            
+            <!-- Legends Bar -->
+            <div class="absolute top-3 left-5 flex items-center gap-3 z-10 text-xs">
+                <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 shadow-md">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                    <span class="text-slate-300 font-medium">Teacher (Stop-Grad &amp; EMA)</span>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 shadow-md">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                    <span class="text-slate-300 font-medium">Student (Backprop &amp; MIM)</span>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 shadow-md">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-slate-300 font-medium">Representación &amp; Low-Shot</span>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 shadow-md">
+                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                    <span class="text-slate-300 font-medium">Downstream Transfer</span>
+                </div>
+            </div>
+
+            <!-- SVG Wrapper for Zoom & Pan -->
+            <div id="svg-wrapper" class="w-full h-full flex items-center justify-center">
+                <svg id="architecture-svg" viewBox="0 0 1350 780" class="w-full h-full max-w-[1350px] max-h-[780px]" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- Arrow Markers -->
+                        <marker id="arrow-default" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+                        </marker>
+                        <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                        </marker>
+                        <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+                        </marker>
+                        <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+                        </marker>
+                        <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6" />
+                        </marker>
+
+                        <!-- Subtle Drop Shadows -->
+                        <filter id="node-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.4"/>
+                        </filter>
+                    </defs>
+
+                    <!-- STAGE BACKGROUND CONTAINERS -->
+                    <g id="stage-containers" opacity="0.9">
+                        <!-- Stage 01 -->
+                        <rect x="30" y="100" width="140" height="640" rx="12" fill="#0b1329" stroke="#1e293b" stroke-width="1"/>
+                        <text class="stage-title" x="42" y="122">01 · Unlabeled Data</text>
+
+                        <!-- Stage 02 -->
+                        <rect x="190" y="100" width="150" height="640" rx="12" fill="#0b1329" stroke="#1e293b" stroke-width="1"/>
+                        <text class="stage-title" x="202" y="122">02 · Multi-Crop Views</text>
+
+                        <!-- Stage 03 -->
+                        <rect x="360" y="100" width="570" height="640" rx="12" fill="#090d1a" stroke="#1e293b" stroke-width="1.5"/>
+                        <text class="stage-title" x="375" y="122">03 · MaskCluster SSL Pretraining (Pretext Task)</text>
+
+                        <!-- Teacher Network Lane -->
+                        <rect x="375" y="145" width="330" height="180" rx="10" fill="#1e1b4b" fill-opacity="0.2" stroke="#4338ca" stroke-dasharray="4 4" stroke-width="1"/>
+                        <text class="lane-title" x="388" y="166" fill="#818cf8">Teacher Network · Target Generation · Stop-Grad</text>
+
+                        <!-- Student Network Lane -->
+                        <rect x="375" y="400" width="330" height="290" rx="10" fill="#881337" fill-opacity="0.15" stroke="#be123c" stroke-dasharray="4 4" stroke-width="1"/>
+                        <text class="lane-title" x="388" y="421" fill="#fb7185">Student Network · Predictions · Backpropagation</text>
+
+                        <!-- Loss & Regularization Block Container -->
+                        <rect x="735" y="240" width="180" height="300" rx="12" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" filter="url(#node-shadow)"/>
+                        <text class="lane-title" x="748" y="262" fill="#60a5fa">Joint Loss &amp; Regularizer</text>
+
+                        <!-- Stage 04 -->
+                        <rect x="950" y="100" width="160" height="640" rx="12" fill="#062c19" fill-opacity="0.25" stroke="#047857" stroke-width="1.5"/>
+                        <text class="stage-title" x="962" y="122" fill="#34d399">04 · Pretrained Features</text>
+
+                        <!-- Stage 05 -->
+                        <rect x="1130" y="100" width="200" height="640" rx="12" fill="#2e1065" fill-opacity="0.2" stroke="#6b21a8" stroke-width="1.5"/>
+                        <text class="stage-title" x="1142" y="122" fill="#c084fc">05 · Downstream Transfer</text>
+                    </g>
+
+                    <!-- CONNECTIONS & PATHS -->
+                    <g id="paths-group" fill="none" stroke-width="1.5">
+                        <!-- Input to Crops -->
+                        <path id="path-1a" class="connection-path" d="M 150 420 C 180 420, 180 227.5, 210 227.5" stroke="#475569" marker-end="url(#arrow-default)" />
+                        <path id="path-1b" class="connection-path" d="M 150 420 C 180 420, 180 552.5, 210 552.5" stroke="#475569" marker-end="url(#arrow-default)" />
+
+                        <!-- Crops to Encoders -->
+                        <path id="path-2a" class="connection-path" d="M 320 227.5 L 390 230" stroke="#3b82f6" marker-end="url(#arrow-blue)" />
+                        <path id="path-2b" class="connection-path" d="M 320 552.5 L 390 552.5" stroke="#f59e0b" marker-end="url(#arrow-amber)" />
+
+                        <!-- Teacher Encoder to Teacher Heads -->
+                        <path id="path-teacher-enc" class="connection-path" d="M 505 230 L 575 230" stroke="#818cf8" marker-end="url(#arrow-blue)" />
+
+                        <!-- Student Encoder to Student Heads & MIM -->
+                        <path id="path-student-to-heads" class="connection-path" d="M 505 552.5 C 540 552.5, 540 472.5, 575 472.5" stroke="#f43f5e" marker-end="url(#arrow-default)" />
+                        <path id="path-student-to-mim" class="connection-path" d="M 505 552.5 C 540 552.5, 540 622.5, 575 622.5" stroke="#10b981" marker-end="url(#arrow-emerald)" />
+
+                        <!-- EMA Weight Update Line -->
+                        <path id="path-ema" class="connection-path" d="M 447.5 502.5 L 447.5 280" stroke="#f59e0b" stroke-dasharray="5 4" marker-end="url(#arrow-amber)" />
+
+                        <!-- Heads to Loss Block -->
+                        <path id="path-teacher-to-loss" class="connection-path" d="M 690 230 C 715 230, 715 300, 740 300" stroke="#818cf8" marker-end="url(#arrow-blue)" />
+                        <path id="path-student-to-loss" class="connection-path" d="M 690 472.5 C 715 472.5, 715 390, 740 390" stroke="#f43f5e" marker-end="url(#arrow-blue)" />
+                        <path id="path-mim-to-loss" class="connection-path" d="M 690 622.5 C 715 622.5, 715 470, 740 470" stroke="#10b981" marker-end="url(#arrow-emerald)" />
+
+                        <!-- Loss Block to Capabilities -->
+                        <path id="path-loss-to-cap" class="connection-path" d="M 910 390 L 970 390" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow-emerald)" />
+
+                        <!-- Capabilities to Downstream Tasks -->
+                        <path id="path-cap-to-ds1" class="connection-path" d="M 1090 390 C 1122 390, 1122 220, 1155 220" stroke="#8b5cf6" marker-end="url(#arrow-purple)" />
+                        <path id="path-cap-to-ds2" class="connection-path" d="M 1090 390 L 1155 390" stroke="#8b5cf6" marker-end="url(#arrow-purple)" />
+                        <path id="path-cap-to-ds3" class="connection-path" d="M 1090 390 C 1122 390, 1122 560, 1155 560" stroke="#8b5cf6" marker-end="url(#arrow-purple)" />
+                    </g>
+
+                    <!-- PATH LABELS -->
+                    <g id="path-labels" pointer-events="none">
+                        <text class="path-text" x="332" y="222">unmasked</text>
+                        <text class="path-text" x="328" y="544">GMML 50% mask</text>
+                        <text class="path-text" x="454" y="390" fill="#f59e0b" font-weight="700">EMA Update</text>
+                        <text class="path-text" x="698" y="220" fill="#818cf8">targets</text>
+                        <text class="path-text" x="695" y="462" fill="#fb7185">preds</text>
+                        <text class="path-text" x="695" y="612" fill="#34d399">pixels</text>
+                        <text class="path-text" x="918" y="382" fill="#34d399" font-weight="700">Student Encoder</text>
+                    </g>
+
+                    <!-- ANIMATED FLOW PARTICLES -->
+                    <g id="particles-group" pointer-events="none"></g>
+
+                    <!-- INTERACTIVE NODES GROUP -->
+                    <g id="nodes-group">
+
+                        <!-- NODE 1: Input Image -->
+                        <g class="node-group" data-id="input-image" transform="translate(50, 370)">
+                            <rect x="0" y="0" width="100" height="100" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <image href="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=120&auto=format&fit=crop&q=80" x="10" y="10" width="80" height="60" clip-path="inset(0 rounded 6px)" opacity="0.85"/>
+                            <text x="50" y="85" text-anchor="middle" fill="#cbd5e1" font-size="10.5" font-weight="700">Imagen x</text>
+                        </g>
+
+                        <!-- NODE 2: Global Crops -->
+                        <g class="node-group" data-id="global-crops" transform="translate(210, 180)">
+                            <rect x="0" y="0" width="110" height="95" rx="10" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <rect x="20" y="12" width="70" height="42" fill="#1e3a8a" opacity="0.5" rx="4"/>
+                            <text x="55" y="36" text-anchor="middle" fill="#93c5fd" font-size="9.5" font-weight="700">Global Crops</text>
+                            <text x="55" y="70" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="700">Sin Enmascarar</text>
+                            <text x="55" y="83" text-anchor="middle" fill="#94a3b8" font-size="8.5">(224 × 224)</text>
+                        </g>
+
+                        <!-- NODE 3: Student Masked Crops -->
+                        <g class="node-group" data-id="student-crops" transform="translate(210, 505)">
+                            <rect x="0" y="0" width="110" height="95" rx="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <!-- Mini Grid Icon -->
+                            <g fill="#1e293b" stroke="#334155" stroke-width="0.8" transform="translate(30, 10)">
+                                <rect x="0" y="0" width="15" height="15" fill="#f59e0b" opacity="0.85"/>
+                                <rect x="17" y="0" width="15" height="15"/>
+                                <rect x="34" y="0" width="15" height="15" fill="#f59e0b" opacity="0.85"/>
+                                <rect x="0" y="17" width="15" height="15"/>
+                                <rect x="17" y="17" width="15" height="15" fill="#f59e0b" opacity="0.85"/>
+                                <rect x="34" y="17" width="15" height="15"/>
+                            </g>
+                            <text x="55" y="66" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="700">Masked Crops</text>
+                            <text x="55" y="81" text-anchor="middle" fill="#94a3b8" font-size="8.5">(GMML 50% Mask)</text>
+                        </g>
+
+                        <!-- NODE 4: Teacher Encoder -->
+                        <g class="node-group" data-id="teacher-encoder" transform="translate(390, 180)">
+                            <rect x="0" y="0" width="115" height="100" rx="10" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <g transform="translate(43, 14)" fill="none" stroke="#818cf8" stroke-width="2">
+                                <path d="M14 2 L25 6 V15 C25 22 20 27 14 30 C8 27 3 22 3 15 V6 Z"/>
+                                <path d="M8 15 L12 19 L20 10"/>
+                            </g>
+                            <text x="57.5" y="60" text-anchor="middle" fill="#c7d2fe" font-size="10.5" font-weight="700">Teacher Encoder</text>
+                            <text x="57.5" y="74" text-anchor="middle" fill="#818cf8" font-size="9" font-weight="600">ViT-S/16 (EMA)</text>
+                            <text x="57.5" y="87" text-anchor="middle" fill="#6366f1" font-size="8">(Stop-Gradient)</text>
+                        </g>
+
+                        <!-- NODE 5: Teacher Heads -->
+                        <g class="node-group" data-id="teacher-heads" transform="translate(575, 180)">
+                            <rect x="0" y="0" width="115" height="100" rx="10" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <text x="57.5" y="28" text-anchor="middle" fill="#e0e7ff" font-size="10" font-weight="700">Teacher Heads</text>
+                            <line x1="15" y1="35" x2="100" y2="35" stroke="#312e81"/>
+                            <text x="57.5" y="52" text-anchor="middle" fill="#a5b4fc" font-size="9">CL_t ([CLS] Token)</text>
+                            <text x="57.5" y="68" text-anchor="middle" fill="#a5b4fc" font-size="9">PL_t (Patch Tokens)</text>
+                            <text x="57.5" y="86" text-anchor="middle" fill="#818cf8" font-size="8.5" font-weight="700">Targets (K=8192)</text>
+                        </g>
+
+                        <!-- NODE 6: Student Encoder -->
+                        <g class="node-group" data-id="student-encoder" transform="translate(390, 502.5)">
+                            <rect x="0" y="0" width="115" height="100" rx="10" fill="#311313" stroke="#f43f5e" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <g transform="translate(43, 12)" fill="none" stroke="#fb7185" stroke-width="2">
+                                <rect x="3" y="3" width="22" height="22" rx="3"/><rect x="8" y="8" width="12" height="12" rx="1"/>
+                                <path d="M8 0V3 M14 0V3 M20 0V3 M8 25V28 M14 25V28 M20 25V28 M0 8H3 M0 14H3 M0 20H3 M25 8H28 M25 14H28 M25 20H28"/>
+                            </g>
+                            <text x="57.5" y="56" text-anchor="middle" fill="#fecdd3" font-size="10.5" font-weight="700">Student Encoder</text>
+                            <text x="57.5" y="70" text-anchor="middle" fill="#fda4af" font-size="9" font-weight="600">ViT-S/16</text>
+                            <text x="57.5" y="84" text-anchor="middle" fill="#f43f5e" font-size="8.5" font-weight="700">+ Efficient Attn</text>
+                        </g>
+
+                        <!-- NODE 7: Student Heads -->
+                        <g class="node-group" data-id="student-heads" transform="translate(575, 425)">
+                            <rect x="0" y="0" width="115" height="95" rx="10" fill="#2a1215" stroke="#f43f5e" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <text x="57.5" y="26" text-anchor="middle" fill="#ffe4e6" font-size="10" font-weight="700">Student Heads</text>
+                            <line x1="15" y1="33" x2="100" y2="33" stroke="#4c1d24"/>
+                            <text x="57.5" y="49" text-anchor="middle" fill="#fecdd3" font-size="9">CL_s ([CLS] Proj)</text>
+                            <text x="57.5" y="65" text-anchor="middle" fill="#fecdd3" font-size="9">PL_s (Patch Proj)</text>
+                            <text x="57.5" y="82" text-anchor="middle" fill="#fda4af" font-size="8.5" font-weight="700">Predictions</text>
+                        </g>
+
+                        <!-- NODE 8: MIM Decoder -->
+                        <g class="node-group" data-id="mim-head" transform="translate(575, 575)">
+                            <rect x="0" y="0" width="115" height="95" rx="10" fill="#062c19" stroke="#10b981" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <g transform="translate(44, 12)" fill="none" stroke="#34d399" stroke-width="1.7">
+                                <rect x="2" y="2" width="24" height="24" rx="3"/><path d="M10 2V26 M18 2V26 M2 10H26 M2 18H26"/>
+                            </g>
+                            <text x="57.5" y="55" text-anchor="middle" fill="#a7f3d0" font-size="10.5" font-weight="700">MIM Decoder</text>
+                            <text x="57.5" y="70" text-anchor="middle" fill="#34d399" font-size="8.5" font-weight="600">Reconstrucción Píxeles</text>
+                            <text x="57.5" y="83" text-anchor="middle" fill="#059669" font-size="8">(Capas L={6,8,10,12})</text>
+                        </g>
+
+                        <!-- NODE 9: Loss Block (Interactive Sub-items) -->
+                        <g class="node-group" data-id="loss-block" transform="translate(740, 250)">
+                            <!-- Main Container handled inside stage, but interactive overlay here -->
+                            <rect x="0" y="0" width="170" height="280" rx="12" fill="transparent" stroke="transparent"/>
+                            
+                            <!-- Loss Items inside -->
+                            <g transform="translate(12, 42)">
+                                <rect x="0" y="0" width="146" height="42" rx="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                                <text x="10" y="18" fill="#93c5fd" font-size="9.5" font-weight="700">L_cc (CLS Clustering)</text>
+                                <text x="10" y="32" fill="#64748b" font-size="8">Cross Entropy (Global)</text>
+                            </g>
+                            <g transform="translate(12, 94)">
+                                <rect x="0" y="0" width="146" height="42" rx="7" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+                                <text x="10" y="18" fill="#93c5fd" font-size="9.5" font-weight="700">L_cp (Patch Clustering)</text>
+                                <text x="10" y="32" fill="#64748b" font-size="8">Cross Entropy (Local)</text>
+                            </g>
+                            <g transform="translate(12, 146)">
+                                <rect x="0" y="0" width="146" height="42" rx="7" fill="#2d1b06" stroke="#f59e0b" stroke-width="1"/>
+                                <text x="10" y="18" fill="#fcd34d" font-size="9.5" font-weight="700">L_me (ME-MAX Regularizer)</text>
+                                <text x="10" y="32" fill="#d97706" font-size="8">Entropy Max (Anti-Collapse)</text>
+                            </g>
+                            <g transform="translate(12, 198)">
+                                <rect x="0" y="0" width="146" height="42" rx="7" fill="#062c19" stroke="#10b981" stroke-width="1"/>
+                                <text x="10" y="18" fill="#6ee7b7" font-size="9.5" font-weight="700">L_mim (MIM L1 Loss)</text>
+                                <text x="10" y="32" fill="#059669" font-size="8">Pixel Reconstruction Error</text>
+                            </g>
+                        </g>
+
+                        <!-- NODE 10: Capabilities Node -->
+                        <g class="node-group" data-id="capabilities-node" transform="translate(970, 310)">
+                            <rect x="0" y="0" width="120" height="160" rx="12" fill="#022c22" stroke="#10b981" stroke-width="2" filter="url(#node-shadow)"/>
+                            <circle cx="60" cy="40" r="22" fill="#065f46"/>
+                            <g transform="translate(48, 28)" fill="none" stroke="#6ee7b7" stroke-width="1.8">
+                                <path d="M12 1 C12 7 8 11 2 11 C8 11 12 15 12 22 C12 15 16 11 22 11 C16 11 12 7 12 1 Z"/>
+                                <path d="M22 2V8 M19 5H25"/>
+                            </g>
+                            <text x="60" y="80" text-anchor="middle" fill="#6ee7b7" font-size="10.5" font-weight="700">Representación</text>
+                            <text x="60" y="94" text-anchor="middle" fill="#6ee7b7" font-size="10.5" font-weight="700">Visual Rica</text>
+                            <line x1="15" y1="106" x2="105" y2="106" stroke="#047857"/>
+                            <text x="60" y="124" text-anchor="middle" fill="#a7f3d0" font-size="9" font-weight="600">Elevadas Low-Shot</text>
+                            <text x="60" y="138" text-anchor="middle" fill="#a7f3d0" font-size="9" font-weight="600">Capabilities</text>
+                        </g>
+
+                        <!-- NODE 11: Multi-Class Classification -->
+                        <g class="node-group" data-id="ds-multiclass" transform="translate(1155, 165)">
+                            <rect x="0" y="0" width="155" height="110" rx="10" fill="#2e1065" stroke="#a855f7" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <g transform="translate(14, 14)" fill="none" stroke="#d8b4fe" stroke-width="1.6">
+                                <path d="M2 4V17L10 25L24 11L17 4Z"/><circle cx="15" cy="9" r="2"/>
+                            </g>
+                            <text x="44" y="28" fill="#f3e8ff" font-size="10.5" font-weight="700">Multiclase Low-Shot</text>
+                            <text x="14" y="52" fill="#c084fc" font-size="8.5">ImageNet-1K (1, 2, 5 imgs)</text>
+                            <text x="14" y="70" fill="#a855f7" font-size="8.5" font-weight="700">Acc 1-shot: 22.4%</text>
+                            <text x="14" y="84" fill="#cbd5e1" font-size="8">(Clasificación del artículo)</text>
+                        </g>
+
+                        <!-- NODE 12: Multi-Label Classification -->
+                        <g class="node-group" data-id="ds-multilabel" transform="translate(1155, 335)">
+                            <rect x="0" y="0" width="155" height="110" rx="10" fill="#2e1065" stroke="#a855f7" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <g transform="translate(14, 14)" fill="none" stroke="#d8b4fe" stroke-width="1.6">
+                                <path d="M2 8L12 2L22 8L12 14Z M2 13L12 19L22 13 M2 18L12 24L22 18"/>
+                            </g>
+                            <text x="44" y="28" fill="#f3e8ff" font-size="10.5" font-weight="700">Multietiqueta Low-Shot</text>
+                            <text x="14" y="52" fill="#c084fc" font-size="8.5">Pascal VOC &amp; Mini-COCO</text>
+                            <text x="14" y="70" fill="#a855f7" font-size="8.5" font-weight="700">mAP: 54.1%</text>
+                            <text x="14" y="84" fill="#cbd5e1" font-size="8">(Mini-COCO 20% data)</text>
+                        </g>
+
+                        <!-- NODE 13: Semantic Segmentation -->
+                        <g class="node-group" data-id="ds-segmentation" transform="translate(1155, 505)">
+                            <rect x="0" y="0" width="155" height="110" rx="10" fill="#2e1065" stroke="#a855f7" stroke-width="1.5" filter="url(#node-shadow)"/>
+                            <g transform="translate(14, 14)" fill="none" stroke="#d8b4fe" stroke-width="1.6">
+                                <rect x="2" y="2" width="9" height="9"/><rect x="14" y="2" width="9" height="9"/>
+                                <rect x="2" y="14" width="9" height="9"/><rect x="14" y="14" width="9" height="9"/>
+                            </g>
+                            <text x="44" y="28" fill="#f3e8ff" font-size="10.5" font-weight="700">Segmentación Semánt.</text>
+                            <text x="14" y="52" fill="#c084fc" font-size="8.5">Pascal 5i &amp; FPTrans</text>
+                            <text x="14" y="70" fill="#a855f7" font-size="8.5" font-weight="700">mIoU 1-shot: 63.5%</text>
+                            <text x="14" y="84" fill="#cbd5e1" font-size="8">(Compite con Supervisado)</text>
+                        </g>
+
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Canvas Bottom Hint -->
+            <div class="absolute bottom-3 left-5 text-xs text-slate-500 flex items-center gap-2 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 pointer-events-none">
+                <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span>Haz clic en cualquier nodo para inspeccionar detalles matemáticos y conexiones. Arrastra para desplazar el canvas.</span>
+            </div>
+        </div>
+
+        <!-- Right Side Panel: Technical Deep-Dive Inspector -->
+        <aside id="inspector-panel" class="w-96 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 z-10 transition-transform duration-300">
+            <!-- Inspector Header -->
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+                <div class="flex items-center space-x-2">
+                    <span id="panel-badge" class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        Component Inspector
+                    </span>
+                </div>
+                <button id="btn-close-panel" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Panel Content Container -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-5" id="panel-content">
+                <!-- Dynamically populated via JavaScript -->
+            </div>
+
+            <!-- Panel Footer Info -->
+            <div class="p-3.5 border-t border-slate-800 bg-slate-950/80 text-[11px] text-slate-400 flex items-center justify-between">
+                <span>Ref: IJCV 2025 Paper</span>
+                <span class="text-blue-400 font-mono">ViT-S/16 Backbone</span>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data Store for technical specifications & paper context
+        const NODE_DETAILS = {
+            'input-image': {
+                title: 'Imagen de Entrada x',
+                category: 'Datos de Entrada (Unlabeled)',
+                categoryColor: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+                description: 'Imagen RGB original de alta resolución procesada por la canalización SSL.',
+                paperContext: 'El preentrenamiento de MaskCluster se realiza sobre el dataset ImageNet-1K completo sin utilizar ninguna etiqueta de clase (Unlabeled Data).',
+                technicalSpecs: [
+                    { label: 'Resolución Base', value: '224 × 224 píxeles' },
+                    { label: 'Lote (Batch Size)', value: '512 imágenes por iteración' },
+                    { label: 'Aumento de Datos', value: 'Multi-crop (2 Global + 10 Local)' }
+                ],
+                formula: 'x \\in \\mathbb{R}^{B \\times H \\times W \\times C}',
+                codeSnippet: '# Batch Tensor\nx.shape = [512, 3, 224, 224]'
+            },
+            'global-crops': {
+                title: 'Global Crops (Unmasked)',
+                category: 'Aumento de Datos (Teacher)',
+                categoryColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                description: 'Recortes globales completos de la imagen entregados al Teacher Encoder sin enmascarar.',
+                paperContext: 'Se generan 2 recortes globales (x_g1, x_g2) a resolución 224x224. Servirán como referencia semántica no distorsionada para generar las pseudo-etiquetas de clusters.',
+                technicalSpecs: [
+                    { label: 'Cantidad Global', value: '2 Vistas de 224×224' },
+                    { label: 'Vistas Locales Extra', value: '10 Vistas de 96×96' },
+                    { label: 'Enmascaramiento', value: '0% (Completas)' }
+                ],
+                formula: 'x_{g1}, x_{g2} = \\text{Augment}(x)',
+                codeSnippet: 'x_global = augment_pipeline(x)\n# Shape: [B, 2, 3, 224, 224]'
+            },
+            'student-crops': {
+                title: 'Masked Crops (GMML Strategy)',
+                category: 'Enmascaramiento (Student)',
+                categoryColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                description: 'Recortes globales fuertemente enmascarados entregados al Student Encoder.',
+                paperContext: 'Siguiendo la estrategia GMML (Atito et al., 2022), se bloquea el 50% de parches por bloques (block-wise masking) combinando ruido, ceros y parches alienígenas.',
+                technicalSpecs: [
+                    { label: 'Tasa de Máscara', value: '50% de parches ocultos' },
+                    { label: 'Estrategia', value: 'Block-wise masking (GMML)' },
+                    { label: 'Matriz M(i,j)', value: '1 si está oculto, 0 si no' }
+                ],
+                formula: 'M(i,j) = \\begin{cases} 1 & \\text{si } x(i,j) \\text{ está oculto} \\\\ 0 & \\text{en otro caso} \\end{cases}',
+                codeSnippet: 'mask = generate_gmml_mask(ratio=0.50)\nx_masked = x_global * (1 - mask)'
+            },
+            'teacher-encoder': {
+                title: 'Teacher Encoder (ViT-S / EMA)',
+                category: 'Red Encoder (Teacher)',
+                categoryColor: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+                description: 'Vision Transformer que procesa imágenes limpias para generar las metas de agrupación (clusters).',
+                paperContext: 'Sus parámetros NO se actualizan mediante retropropagación (Stop-Gradient). En su lugar, se actualizan suavemente mediante un Promedio Móvil Exponencial (EMA) de los pesos del Student.',
+                technicalSpecs: [
+                    { label: 'Backbone', value: 'ViT-S/16 (Vision Transformer Small)' },
+                    { label: 'Actualización', value: 'EMA (Exponential Moving Average)' },
+                    { label: 'Dimensión Embedding', value: 'd = 384' }
+                ],
+                formula: '\\theta_t \\leftarrow \\lambda \\theta_t + (1 - \\lambda) \\theta_s',
+                codeSnippet: '# EMA Update (No Gradients)\nfor p_t, p_s in zip(teacher.parameters(), student.parameters()):\n    p_t.data = momentum * p_t.data + (1 - momentum) * p_s.data'
+            },
+            'teacher-heads': {
+                title: 'Teacher Clustering Heads (CL_t & PL_t)',
+                category: 'Cabezales de Agrupamiento',
+                categoryColor: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+                description: 'Proyectores que generan las pseudo-etiquetas de clusters objetivos a nivel global y de parche.',
+                paperContext: 'Mapea los embeddings a un espacio de K=8192 clusters. Produce distribuciones suaves que sirven como target para supervisar al Student.',
+                technicalSpecs: [
+                    { label: 'Clusters K', value: '8192 prototipos' },
+                    { label: 'Nivel Global', value: 'CL_t (Token [CLS])' },
+                    { label: 'Nivel Local', value: 'PL_t (Tokens de Parches)' }
+                ],
+                formula: 'P_c^G = \\text{Softmax}(CL_t(z_{\\text{cls}}^{e,G}) / \\tau_t)',
+                codeSnippet: 'q_cls = softmax(teacher_cls_head(z_cls) / temp_teacher)'
+            },
+            'student-encoder': {
+                title: 'Student Encoder + Efficient Attention',
+                category: 'Red Encoder (Student)',
+                categoryColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                description: 'Encoder principal que procesa las imágenes enmascaradas y aprende mediante gradientes directos.',
+                paperContext: 'Introduce un mecanismo de Atención Eficiente para imágenes enmascaradas dividida en Auto-Atención (tokens visibles) y Atención Cruzada (de tokens ocultos a visibles), acelerando el rendimiento.',
+                technicalSpecs: [
+                    { label: 'Backbone', value: 'ViT-S/16' },
+                    { label: 'Atención Eficiente', value: 'Concat(Self-Attention, Cross-Attention)' },
+                    { label: 'Optimizador', value: 'AdamW (lr = 5e-4)' }
+                ],
+                formula: 'EA = \\text{Concat}(\\text{SA}(Q_u, K_u, V_u), \\text{CA}(Q_m, K_u, V_u))',
+                codeSnippet: 'sa = softmax(Q_u @ K_u.T / sqrt(d)) @ V_u\nca = softmax(Q_m @ K_u.T / sqrt(d)) @ V_u\nefficient_attn = concat([sa, ca])'
+            },
+            'student-heads': {
+                title: 'Student Clustering Heads (CL_s & PL_s)',
+                category: 'Cabezales de Predicción',
+                categoryColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                description: 'Proyectores del Student que intentan predecir los mismos clusters del Teacher sobre imágenes incompletas.',
+                paperContext: 'Genera probabilidades de cluster sobre la imagen recortada y enmascarada. Se compara mediante Entropía Cruzada con las metas del Teacher.',
+                technicalSpecs: [
+                    { label: 'Predicción Global', value: '\\bar{P}_c^G (Token [CLS])' },
+                    { label: 'Predicción Local', value: '\\bar{P}_p^G (Tokens de Parches)' },
+                    { label: 'Temperatura', value: '\\tau_s = 0.1' }
+                ],
+                formula: '\\bar{P}_c^G = \\text{Softmax}(CL_s(\\bar{z}_{cls}^{s,G}) / \\tau_s)',
+                codeSnippet: 'p_cls = softmax(student_cls_head(z_masked) / temp_student)'
+            },
+            'mim-head': {
+                title: 'Lightweight MIM Decoder',
+                category: 'Decodificador de Reconstrucción',
+                categoryColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                description: 'Cabezal liviano adjunto al Student que reconstruye los píxeles originales de las regiones enmascaradas.',
+                paperContext: 'Toma la suma de las salidas de las capas intermedias L={6,8,10,12} del Transformer y aplica deconvoluciones para reconstruir los píxeles ocultos.',
+                technicalSpecs: [
+                    { label: 'Entrada Decoder', value: 'Suma de capas L = {6, 8, 10, 12}' },
+                    { label: 'Estructura', value: 'Capas Lineales + GeLU + ConvTranspose' },
+                    { label: 'Pérdida', value: 'Norma L1 sobre píxeles enmascarados' }
+                ],
+                formula: '\\mathcal{L}_{mim} = \\sum_{i,j} M(i,j) \\cdot |x(i,j) - \\hat{x}(i,j)|',
+                codeSnippet: 'x_rec = mim_decoder(sum(student_layers[6,8,10,12]))\nloss_mim = l1_loss(x_rec[mask], x_orig[mask])'
+            },
+            'loss-block': {
+                title: 'Bloque de Pérdidas Multiescala & ME-MAX',
+                category: 'Objetivo de Optimización Total',
+                categoryColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                description: 'Función de pérdida global que combina agrupamiento semántico, regularización anti-colapso y reconstrucción de píxeles.',
+                paperContext: 'Combina L_cc (clustering de clase), L_cp (clustering de parches), L_mim (reconstrucción MIM) y L_me (regularizador ME-MAX aplicado tanto a clases como a parches).',
+                technicalSpecs: [
+                    { label: 'Fórmula Global', value: 'L_total = L_cc + L_cp + L_mim + L_me' },
+                    { label: 'Ponderadores', value: 'β_r = β_c = β_p = β_m = 1.0' },
+                    { label: 'Efecto', value: 'Busca combinar contexto global e información local' }
+                ],
+                formula: '\\mathcal{L}_{total} = \\beta_c \\mathcal{L}_{cc} + \\beta_p \\mathcal{L}_{cp} + \\beta_r \\mathcal{L}_{mim} + \\beta_m \\mathcal{L}_{me}',
+                codeSnippet: '# Total Loss\nloss_total = loss_cls_cluster + loss_patch_cluster + loss_mim + loss_memax'
+            },
+            'capabilities-node': {
+                title: 'Representación Visual & Capabilities',
+                category: 'Modelo Preentrenado SSL',
+                categoryColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                description: 'El resultado clave de MaskCluster: características ricas en contexto global y geometría local.',
+                paperContext: 'Al finalizar la Fase 1, el Student Encoder posee representaciones altamente transferibles con elevadas capacidades para pocos ejemplos (Low-Shot Capabilities).',
+                technicalSpecs: [
+                    { label: 'Semántica Global', value: 'Lograda mediante Clustering [CLS]' },
+                    { label: 'Geometría Local', value: 'Lograda mediante MIM + Patch Clustering' },
+                    { label: 'Transferencia', value: 'Alineada para adaptación rápida con muy pocas etiquetas' }
+                ],
+                formula: '\\text{Features} = f_{\\theta_s}(x)',
+                codeSnippet: '# Pretrained Backbone ready for downstream fine-tuning\npretrained_encoder = student.encoder'
+            },
+            'ds-multiclass': {
+                title: 'Clasificación Multiclase (Low-Shot)',
+                category: 'Tarea Final (Downstream)',
+                categoryColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                description: 'Ajuste fino (fine-tuning) en ImageNet-1K con subconjuntos reducidos por etiqueta.',
+                paperContext: 'El artículo reporta 22.4% Top-1 en ImageNet-1K con una imagen etiquetada por clase. Es un resultado de clasificación tras transferencia, no una métrica de reidentificación ni una comparación directa con este laboratorio.',
+                technicalSpecs: [
+                    { label: '1 Imagen / Clase', value: '22.4% Accuracy (Clasificación del artículo)' },
+                    { label: '2 Imágenes / Clase', value: '34.8% Accuracy' },
+                    { label: '5 Imágenes / Clase', value: '48.9% Accuracy' },
+                    { label: '1% Dataset', value: '58.5% Accuracy' }
+                ],
+                formula: null,
+                codeSnippet: null
+            },
+            'ds-multilabel': {
+                title: 'Clasificación Multietiqueta (Low-Shot)',
+                category: 'Tarea Final (Downstream)',
+                categoryColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                description: 'Reconocimiento de múltiples objetos en una misma escena sobre Pascal VOC y Mini-COCO.',
+                paperContext: 'Evalúa la capacidad de capturar múltiples conceptos semánticos simultáneos sin requerir mapas extensos de anotación humana.',
+                technicalSpecs: [
+                    { label: 'Pascal VOC (1 Img)', value: '27.1 mAP' },
+                    { label: 'Pascal VOC (5 Img)', value: '46.6 mAP' },
+                    { label: 'Mini-COCO (20% data)', value: '54.1 mAP' }
+                ],
+                formula: null,
+                codeSnippet: null
+            },
+            'ds-segmentation': {
+                title: 'Segmentación Semántica (Low-Shot)',
+                category: 'Tarea Final (Downstream)',
+                categoryColor: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                description: 'Clasificación a nivel de píxel usando la arquitectura FPTrans sobre Pascal 5i.',
+                paperContext: 'Al inicializar el backbone ViT con MaskCluster, la segmentación con 1 y 5 ejemplos supera a otros modelos SSL y compite con métodos pocos-ejemplos supervisados.',
+                technicalSpecs: [
+                    { label: 'Pascal 5i (1-Shot)', value: '63.5% Mean mIoU' },
+                    { label: 'Pascal 5i (5-Shot)', value: '70.0% Mean mIoU' },
+                    { label: 'Pascal VOC Completo', value: '80.3% mIoU (Finetune)' }
+                ],
+                formula: null,
+                codeSnippet: null
+            }
+        };
+
+        // Graph Connections Map (for Hover & Click Highlighting)
+        const NODE_CONNECTIONS = {
+            'input-image': {
+                outgoingPaths: ['path-1a', 'path-1b'],
+                targets: ['global-crops', 'student-crops']
+            },
+            'global-crops': {
+                incomingPaths: ['path-1a'],
+                outgoingPaths: ['path-2a'],
+                sources: ['input-image'],
+                targets: ['teacher-encoder']
+            },
+            'student-crops': {
+                incomingPaths: ['path-1b'],
+                outgoingPaths: ['path-2b'],
+                sources: ['input-image'],
+                targets: ['student-encoder']
+            },
+            'teacher-encoder': {
+                incomingPaths: ['path-2a', 'path-ema'],
+                outgoingPaths: ['path-teacher-enc'],
+                sources: ['global-crops', 'student-encoder'],
+                targets: ['teacher-heads']
+            },
+            'teacher-heads': {
+                incomingPaths: ['path-teacher-enc'],
+                outgoingPaths: ['path-teacher-to-loss'],
+                sources: ['teacher-encoder'],
+                targets: ['loss-block']
+            },
+            'student-encoder': {
+                incomingPaths: ['path-2b'],
+                outgoingPaths: ['path-student-to-heads', 'path-student-to-mim', 'path-ema'],
+                sources: ['student-crops'],
+                targets: ['student-heads', 'mim-head', 'teacher-encoder']
+            },
+            'student-heads': {
+                incomingPaths: ['path-student-to-heads'],
+                outgoingPaths: ['path-student-to-loss'],
+                sources: ['student-encoder'],
+                targets: ['loss-block']
+            },
+            'mim-head': {
+                incomingPaths: ['path-student-to-mim'],
+                outgoingPaths: ['path-mim-to-loss'],
+                sources: ['student-encoder'],
+                targets: ['loss-block']
+            },
+            'loss-block': {
+                incomingPaths: ['path-teacher-to-loss', 'path-student-to-loss', 'path-mim-to-loss'],
+                outgoingPaths: ['path-loss-to-cap'],
+                sources: ['teacher-heads', 'student-heads', 'mim-head'],
+                targets: ['capabilities-node']
+            },
+            'capabilities-node': {
+                incomingPaths: ['path-loss-to-cap'],
+                outgoingPaths: ['path-cap-to-ds1', 'path-cap-to-ds2', 'path-cap-to-ds3'],
+                sources: ['loss-block'],
+                targets: ['ds-multiclass', 'ds-multilabel', 'ds-segmentation']
+            },
+            'ds-multiclass': {
+                incomingPaths: ['path-cap-to-ds1'],
+                sources: ['capabilities-node']
+            },
+            'ds-multilabel': {
+                incomingPaths: ['path-cap-to-ds2'],
+                sources: ['capabilities-node']
+            },
+            'ds-segmentation': {
+                incomingPaths: ['path-cap-to-ds3'],
+                sources: ['capabilities-node']
+            }
+        };
+
+        // Application State
+        let activeNodeId = 'loss-block';
+        let isPlaying = true;
+        let animationFrameId = null;
+        let activePhase = 'all';
+
+        // Zoom & Pan State
+        let scale = 1.0;
+        let translateX = 0;
+        let translateY = 0;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+
+        // Render Side Inspector Content
+        function renderInspector(nodeId) {
+            const data = NODE_DETAILS[nodeId];
+            if (!data) return;
+
+            const panelContent = document.getElementById('panel-content');
+            
+            let html = `
+                <div>
+                    <span class="inline-block px-2.5 py-1 text-[11px] font-semibold rounded-md border ${data.categoryColor} mb-2">
+                        ${data.category}
+                    </span>
+                    <h2 class="text-lg font-bold text-white">${data.title}</h2>
+                    <p class="text-xs text-slate-300 mt-2 leading-relaxed">${data.description}</p>
+                </div>
+
+                <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
+                    <h4 class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Rol en el Paper
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">${data.paperContext}</p>
+                </div>
+            `;
+
+            if (data.technicalSpecs && data.technicalSpecs.length > 0) {
+                html += `
+                    <div>
+                        <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Especificaciones Técnicas</h4>
+                        <div class="space-y-1.5">
+                            ${data.technicalSpecs.map(s => `
+                                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-xs">
+                                    <span class="text-slate-400">${s.label}</span>
+                                    <span class="font-mono text-slate-200 font-medium">${s.value}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.formula) {
+                html += `
+                    <div>
+                        <h4 class="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i data-lucide="binary" class="w-3.5 h-3.5"></i> Formulación Matemática
+                        </h4>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-amber-200/90 overflow-x-auto">
+                            ${data.formula}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (data.codeSnippet) {
+                html += `
+                    <div>
+                        <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Notación Tensor / Pseudocódigo</h4>
+                        <pre class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-blue-300 overflow-x-auto leading-normal"><code>${data.codeSnippet}</code></pre>
+                    </div>
+                `;
+            }
+
+            panelContent.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // Highlight Active Node and connected Paths
+        function selectNode(nodeId) {
+            activeNodeId = nodeId;
+            const conn = NODE_CONNECTIONS[nodeId] || {};
+
+            const activePaths = new Set([
+                ...(conn.incomingPaths || []),
+                ...(conn.outgoingPaths || [])
+            ]);
+
+            const activeNodes = new Set([
+                nodeId,
+                ...(conn.sources || []),
+                ...(conn.targets || [])
+            ]);
+
+            // Update Nodes
+            document.querySelectorAll('.node-group').forEach(el => {
+                const id = el.getAttribute('data-id');
+                if (activeNodes.has(id)) {
+                    el.classList.remove('node-dimmed');
+                    if (id === nodeId) {
+                        el.classList.add('node-active');
+                    } else {
+                        el.classList.remove('node-active');
+                    }
+                } else {
+                    el.classList.add('node-dimmed');
+                    el.classList.remove('node-active');
+                }
+            });
+
+            // Update Paths
+            document.querySelectorAll('.connection-path').forEach(el => {
+                const id = el.getAttribute('id');
+                if (activePaths.has(id)) {
+                    el.classList.add('path-active');
+                    el.classList.remove('path-dimmed');
+                } else {
+                    el.classList.remove('path-active');
+                    el.classList.add('path-dimmed');
+                }
+            });
+
+            renderInspector(nodeId);
+        }
+
+        // Clear Selection / Reset Dimmer
+        function resetSelection() {
+            document.querySelectorAll('.node-group').forEach(el => {
+                el.classList.remove('node-dimmed', 'node-active');
+            });
+            document.querySelectorAll('.connection-path').forEach(el => {
+                el.classList.remove('path-active', 'path-dimmed');
+            });
+        }
+
+        // Particle Flow Animation Engine
+        function spawnParticle(pathId, color = '#3b82f6', duration = 1800) {
+            if (!isPlaying) return;
+            const path = document.getElementById(pathId);
+            if (!path) return;
+
+            const length = path.getTotalLength();
+            const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            particle.setAttribute('r', '3.5');
+            particle.setAttribute('fill', color);
+            particle.setAttribute('filter', 'drop-shadow(0 0 5px ' + color + ')');
+
+            const group = document.getElementById('particles-group');
+            group.appendChild(particle);
+
+            let start = null;
+
+            function step(timestamp) {
+                if (!start) start = timestamp;
+                const elapsed = timestamp - start;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const point = path.getPointAtLength(progress * length);
+                particle.setAttribute('cx', point.x);
+                particle.setAttribute('cy', point.y);
+
+                if (progress < 1 && isPlaying) {
+                    requestAnimationFrame(step);
+                } else {
+                    particle.remove();
+                }
+            }
+
+            requestAnimationFrame(step);
+        }
+
+        // Sequence Loop
+        function runParticleSequence() {
+            if (!isPlaying) return;
+
+            if (activePhase === 'all' || activePhase === 'ssl') {
+                // Phase 1: Input to Crops
+                spawnParticle('path-1a', '#60a5fa', 1400);
+                spawnParticle('path-1b', '#f59e0b', 1400);
+
+                // Stage 2: Encoders
+                setTimeout(() => {
+                    spawnParticle('path-2a', '#818cf8', 1200);
+                    spawnParticle('path-2b', '#f59e0b', 1200);
+                }, 1000);
+
+                // Stage 3: Heads & Loss
+                setTimeout(() => {
+                    spawnParticle('path-teacher-enc', '#818cf8', 1000);
+                    spawnParticle('path-student-to-heads', '#f43f5e', 1000);
+                    spawnParticle('path-student-to-mim', '#10b981', 1000);
+                    spawnParticle('path-ema', '#f59e0b', 1400);
+                }, 2000);
+
+                setTimeout(() => {
+                    spawnParticle('path-teacher-to-loss', '#818cf8', 900);
+                    spawnParticle('path-student-to-loss', '#f43f5e', 900);
+                    spawnParticle('path-mim-to-loss', '#10b981', 900);
+                }, 3000);
+            }
+
+            if (activePhase === 'all' || activePhase === 'downstream') {
+                const delayOffset = activePhase === 'downstream' ? 0 : 3800;
+
+                setTimeout(() => {
+                    spawnParticle('path-loss-to-cap', '#10b981', 1100);
+                }, delayOffset);
+
+                setTimeout(() => {
+                    spawnParticle('path-cap-to-ds1', '#a855f7', 1200);
+                    spawnParticle('path-cap-to-ds2', '#a855f7', 1200);
+                    spawnParticle('path-cap-to-ds3', '#a855f7', 1200);
+                }, delayOffset + 1100);
+            }
+        }
+
+        function startFlowLoop() {
+            runParticleSequence();
+            if (animationFrameId) clearInterval(animationFrameId);
+            animationFrameId = setInterval(runParticleSequence, activePhase === 'all' ? 6000 : 3200);
+        }
+
+        // Apply Transform Matrix to Canvas
+        function updateCanvasTransform() {
+            const wrapper = document.getElementById('svg-wrapper');
+            wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        // Canvas Pan & Zoom Event Listeners
+        function initPanZoom() {
+            const container = document.getElementById('canvas-container');
+
+            container.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.node-group')) return; // Ignore node clicks
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateCanvasTransform();
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = 1.08;
+                if (e.deltaY < 0) {
+                    scale = Math.min(scale * zoomFactor, 2.5);
+                } else {
+                    scale = Math.max(scale / zoomFactor, 0.6);
+                }
+                updateCanvasTransform();
+            }, { passive: false });
+
+            // Controls
+            document.getElementById('btn-zoom-in').addEventListener('click', () => {
+                scale = Math.min(scale * 1.2, 2.5);
+                updateCanvasTransform();
+            });
+
+            document.getElementById('btn-zoom-out').addEventListener('click', () => {
+                scale = Math.max(scale / 1.2, 0.6);
+                updateCanvasTransform();
+            });
+
+            document.getElementById('btn-reset-view').addEventListener('click', () => {
+                scale = 1.0;
+                translateX = 0;
+                translateY = 0;
+                updateCanvasTransform();
+                resetSelection();
+                selectNode('loss-block');
+            });
+        }
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initPanZoom();
+            selectNode('loss-block');
+            startFlowLoop();
+
+            // Node Click Listeners
+            document.querySelectorAll('.node-group').forEach(node => {
+                node.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = node.getAttribute('data-id');
+                    selectNode(id);
+                });
+            });
+
+            // Canvas Click Listener (Deselect / Background Reset)
+            document.getElementById('architecture-svg').addEventListener('click', (e) => {
+                if (!e.target.closest('.node-group')) {
+                    resetSelection();
+                    selectNode('loss-block');
+                }
+            });
+
+            // Play/Pause Controls
+            document.getElementById('btn-toggle-play').addEventListener('click', () => {
+                isPlaying = !isPlaying;
+                const icon = document.getElementById('icon-play-state');
+                const text = document.getElementById('text-play-state');
+
+                if (isPlaying) {
+                    icon.setAttribute('data-lucide', 'pause');
+                    text.textContent = 'Pausar Flujo';
+                    startFlowLoop();
+                } else {
+                    icon.setAttribute('data-lucide', 'play');
+                    text.textContent = 'Reanudar Flujo';
+                    if (animationFrameId) clearInterval(animationFrameId);
+                    document.getElementById('particles-group').innerHTML = '';
+                }
+                lucide.createIcons();
+            });
+
+            // Phase Filtering Buttons
+            document.getElementById('btn-phase-all').addEventListener('click', () => {
+                activePhase = 'all';
+                startFlowLoop();
+            });
+            document.getElementById('btn-phase-ssl').addEventListener('click', () => {
+                activePhase = 'ssl';
+                startFlowLoop();
+            });
+            document.getElementById('btn-phase-downstream').addEventListener('click', () => {
+                activePhase = 'downstream';
+                startFlowLoop();
+            });
+
+            // Panel Close Button
+            document.getElementById('btn-close-panel').addEventListener('click', () => {
+                const panel = document.getElementById('inspector-panel');
+                panel.classList.toggle('translate-x-full');
+            });
+        });
+    </script>
+</body>
+</html>

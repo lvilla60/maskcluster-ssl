@@ -1,0 +1,496 @@
+{
+  "split": "testing",
+  "checkpoint": "/home/lucio.villa/maskcluster-ssl/outputs/comparative/staged_20261029_052556/runs/20261029T132722Z_no_mim_ba20645d/best_teacher.pt",
+  "run_id": "20261029T132722Z_no_mim_ba20645d",
+  "variant": "no_mim",
+  "encoder": "teacher",
+  "seed": 42,
+  "epoch": 29,
+  "global_step": 2580,
+  "checkpoint_signature": {
+    "sha256": "790c8c2b14b4a2aff2df2988d27a67f2a5f006baa7daa41c18bedb09ac5ea3a2",
+    "size_bytes": 375324667
+  },
+  "training_data_signatures": {
+    "training": {
+      "sha256": "8eca95885bf3262725d971da2005516666dcf6a25e95111b2bef9f8019f8ad87",
+      "size_bytes": 227124285
+    },
+    "validation": {
+      "sha256": "026c284af9cec39b6a814ee6722e187f06bce7dc9cfb6b3f351972355b0cc2d7",
+      "size_bytes": 39020636
+    }
+  },
+  "selection_rule": "highest mean of original-query and low-resolution-query validation mAP",
+  "purpose": "comparative",
+  "run_summary": {
+    "completed_epochs": 30,
+    "start_epoch": 0,
+    "epochs_this_invocation": 30,
+    "max_epochs_per_invocation": 30,
+    "paused": true,
+    "status": "paused",
+    "global_step": 2580,
+    "planned_epochs": 40,
+    "steps_per_epoch": 86,
+    "best_scores_mean_mAP": {
+      "teacher": 0.09687322868064197,
+      "student": 0.10732297296182847
+    },
+    "selected_encoder": "student",
+    "selection_rule": "highest mean of original-query and low-resolution-query validation mAP",
+    "last_validation": {
+      "teacher": {
+        "original": {
+          "mAP": 0.09450675550099627,
+          "rank1": 0.16,
+          "rank5": 0.32,
+          "rank10": 0.4,
+          "valid_queries": 100,
+          "excluded_queries": 0
+        },
+        "low_resolution": {
+          "mAP": 0.09923970186028766,
+          "rank1": 0.16,
+          "rank5": 0.35,
+          "rank10": 0.37,
+          "valid_queries": 100,
+          "excluded_queries": 0
+        },
+        "mean_mAP": 0.09687322868064197,
+        "mAP_drop_percentage_points": -0.473294635929139
+      },
+      "student": {
+        "original": {
+          "mAP": 0.09637500253404097,
+          "rank1": 0.13,
+          "rank5": 0.33,
+          "rank10": 0.44,
+          "valid_queries": 100,
+          "excluded_queries": 0
+        },
+        "low_resolution": {
+          "mAP": 0.09935505575318886,
+          "rank1": 0.16,
+          "rank5": 0.32,
+          "rank10": 0.39,
+          "valid_queries": 100,
+          "excluded_queries": 0
+        },
+        "mean_mAP": 0.09786502914361492,
+        "mAP_drop_percentage_points": -0.29800532191478907
+      }
+    }
+  },
+  "run_metadata": {
+    "seed": 42,
+    "python": "3.11.11",
+    "platform": "Linux-4.18.0-553.123.1.el8_10.x86_64-x86_64-with-glibc2.28",
+    "device_request": "cuda",
+    "packages": {
+      "torch": "2.11.0+cu128",
+      "torchvision": "0.26.0+cu128",
+      "numpy": "2.4.6",
+      "h5py": "3.16.0",
+      "Pillow": "13.0.0",
+      "PyYAML": "6.0.3",
+      "tqdm": "4.70.1"
+    },
+    "environment_inventory": [
+      "Jinja2==3.1.6",
+      "MarkupSafe==3.0.3",
+      "PyYAML==6.0.3",
+      "Pygments==2.21.0",
+      "contourpy==1.3.3",
+      "cuda-bindings==12.9.7",
+      "cuda-pathfinder==1.6.0",
+      "cuda-toolkit==12.8.1",
+      "cycler==0.12.1",
+      "filelock==4.2.4",
+      "fonttools==4.68.0",
+      "fsspec==2026.9.0",
+      "h5py==3.16.0",
+      "iniconfig==2.3.1",
+      "kiwisolver==1.5.1",
+      "maskcluster-ssl==0.1.0",
+      "maskcluster-ssl==0.1.0",
+      "matplotlib==3.11.2",
+      "mpmath==1.3.0",
+      "networkx==3.6.1",
+      "numpy==2.4.6",
+      "nvidia-cublas-cu12==12.8.4.1",
+      "nvidia-cuda-cupti-cu12==12.8.90",
+      "nvidia-cuda-nvrtc-cu12==12.8.93",
+      "nvidia-cuda-runtime-cu12==12.8.90",
+      "nvidia-cudnn-cu12==9.19.0.56",
+      "nvidia-cufft-cu12==11.3.3.83",
+      "nvidia-cufile-cu12==1.13.1.3",
+      "nvidia-curand-cu12==10.3.9.90",
+      "nvidia-cusolver-cu12==11.7.3.90",
+      "nvidia-cusparse-cu12==12.5.8.93",
+      "nvidia-cusparselt-cu12==0.7.1",
+      "nvidia-nccl-cu12==2.28.9",
+      "nvidia-nvjitlink-cu12==12.8.93",
+      "nvidia-nvshmem-cu12==3.4.5",
+      "nvidia-nvtx-cu12==12.8.90",
+      "packaging==26.3",
+      "pandas==3.1.0",
+      "pillow==13.0.0",
+      "pip==26.2.2",
+      "pluggy==1.7.0",
+      "pyparsing==3.3.3",
+      "pytest==9.1.1",
+      "python-dateutil==3.0.0",
+      "setuptools==81.0.0",
+      "six==1.17.0",
+      "sympy==1.14.0",
+      "torch==2.11.0+cu128",
+      "torchvision==0.26.0+cu128",
+      "tqdm==4.70.1",
+      "triton==3.6.0",
+      "typing_extensions==4.16.0",
+      "tzdata==2026.6"
+    ],
+    "direct_pins_file": null,
+    "direct_pins_status": "no_verified_lock_for_this_platform_build",
+    "dependency_specification": "pyproject.toml",
+    "source_sha256": "8d7770e62523e543db91b44c17ca913d29f56276f0e9b84f96d11ecf5716392c",
+    "source_hash_scope": "src/**/*.py, scripts/*.py, configs/*.yaml, pyproject.toml, Windows pins if present",
+    "git_commit": "471157157ef147c3a25fb4ed517bc028ac367530",
+    "git_dirty": true,
+    "git_status": "available",
+    "execution_options": {
+      "max_epochs_per_invocation": 30,
+      "resume": null
+    },
+    "data_signatures": {
+      "training": {
+        "sha256": "8eca95885bf3262725d971da2005516666dcf6a25e95111b2bef9f8019f8ad87",
+        "size_bytes": 227124285
+      },
+      "validation": {
+        "sha256": "026c284af9cec39b6a814ee6722e187f06bce7dc9cfb6b3f351972355b0cc2d7",
+        "size_bytes": 39020636
+      }
+    }
+  },
+  "config": {
+    "seed": 42,
+    "output_dir": "outputs/comparative/staged_20261029_052556/runs",
+    "data": {
+      "training": "/home/lucio.villa/maskcluster-ssl/Input/raw/training.h5",
+      "validation": "/home/lucio.villa/maskcluster-ssl/Input/raw/validation.h5"
+    },
+    "runtime": {
+      "device": "cuda",
+      "num_workers": 0,
+      "amp": true
+    },
+    "model": {
+      "variant": "no_mim",
+      "image_size": [
+        128,
+        64
+      ],
+      "local_size": [
+        96,
+        48
+      ],
+      "local_crops": 4,
+      "patch_size": 16,
+      "embed_dim": 384,
+      "depth": 12,
+      "num_heads": 6,
+      "mlp_ratio": 4.0,
+      "prototypes": 1024,
+      "mask_ratio": 0.5,
+      "reconstruction_layers": [
+        6,
+        8,
+        10,
+        12
+      ],
+      "attention_mode": "visible",
+      "photometric": {
+        "photometric": true,
+        "brightness": 0.15,
+        "contrast": 0.15,
+        "saturation": 0.1,
+        "grayscale_probability": 0.05
+      }
+    },
+    "loss": {
+      "student_temperature": 0.1,
+      "teacher_temperature": 0.04,
+      "me_max_temperature": 0.1,
+      "weights": {
+        "global_clustering": 1.0,
+        "patch_clustering": 1.0,
+        "reconstruction": 1.0,
+        "global_me_max": 1.0,
+        "patch_me_max": 1.0
+      }
+    },
+    "training": {
+      "epochs": 40,
+      "batch_size": 128,
+      "learning_rate": 0.0001,
+      "minimum_learning_rate": 1e-06,
+      "weight_decay": 0.05,
+      "warmup_epochs": 2,
+      "gradient_clip": 3.0,
+      "ema_momentum": 0.996,
+      "ema_momentum_final": 1.0
+    },
+    "evaluation": {
+      "every_epochs": 1,
+      "batch_size": 16,
+      "query_block_size": 64
+    },
+    "purpose": "comparative",
+    "budget_status": "frozen"
+  },
+  "data": {
+    "path": "/home/lucio.villa/maskcluster-ssl/Input/raw/testing.h5",
+    "file": {
+      "sha256": "9d6796de3b4fd4c91a21f544579e40a4fdace0deeaeee48dd2ec1a0b9cd3eaad",
+      "size_bytes": 475648138
+    },
+    "groups": {
+      "query": {
+        "images": {
+          "count": 3368,
+          "shape": [
+            3368,
+            3,
+            128,
+            64
+          ],
+          "dtype": "uint8"
+        },
+        "images_low_resolution": {
+          "count": 3368,
+          "shape": [
+            3368,
+            3,
+            32,
+            16
+          ],
+          "dtype": "uint8"
+        },
+        "person_ids": {
+          "count": 3368,
+          "shape": [
+            3368
+          ],
+          "dtype": "int32"
+        },
+        "camera_ids": {
+          "count": 3368,
+          "shape": [
+            3368
+          ],
+          "dtype": "uint8"
+        },
+        "image_ids": {
+          "count": 3368,
+          "shape": [
+            3368
+          ],
+          "dtype": "|S24"
+        }
+      },
+      "gallery": {
+        "images": {
+          "count": 19732,
+          "shape": [
+            19732,
+            3,
+            128,
+            64
+          ],
+          "dtype": "uint8"
+        },
+        "person_ids": {
+          "count": 19732,
+          "shape": [
+            19732
+          ],
+          "dtype": "int32"
+        },
+        "camera_ids": {
+          "count": 19732,
+          "shape": [
+            19732
+          ],
+          "dtype": "uint8"
+        },
+        "image_ids": {
+          "count": 19732,
+          "shape": [
+            19732
+          ],
+          "dtype": "|S24"
+        }
+      }
+    },
+    "gallery_sha256": "dc1b8f2e7e69d3afcd8883ddd9c0a54c13fcc7e98c8b1d410e576c4b326bcc35"
+  },
+  "protocol": {
+    "version": 1,
+    "split": "testing",
+    "source_file": {
+      "sha256": "9d6796de3b4fd4c91a21f544579e40a4fdace0deeaeee48dd2ec1a0b9cd3eaad",
+      "size_bytes": 475648138
+    },
+    "gallery_sha256": "dc1b8f2e7e69d3afcd8883ddd9c0a54c13fcc7e98c8b1d410e576c4b326bcc35",
+    "groups": {
+      "query": {
+        "images": {
+          "count": 3368,
+          "shape": [
+            3368,
+            3,
+            128,
+            64
+          ],
+          "dtype": "uint8"
+        },
+        "images_low_resolution": {
+          "count": 3368,
+          "shape": [
+            3368,
+            3,
+            32,
+            16
+          ],
+          "dtype": "uint8"
+        },
+        "person_ids": {
+          "count": 3368,
+          "shape": [
+            3368
+          ],
+          "dtype": "int32"
+        },
+        "camera_ids": {
+          "count": 3368,
+          "shape": [
+            3368
+          ],
+          "dtype": "uint8"
+        },
+        "image_ids": {
+          "count": 3368,
+          "shape": [
+            3368
+          ],
+          "dtype": "|S24"
+        }
+      },
+      "gallery": {
+        "images": {
+          "count": 19732,
+          "shape": [
+            19732,
+            3,
+            128,
+            64
+          ],
+          "dtype": "uint8"
+        },
+        "person_ids": {
+          "count": 19732,
+          "shape": [
+            19732
+          ],
+          "dtype": "int32"
+        },
+        "camera_ids": {
+          "count": 19732,
+          "shape": [
+            19732
+          ],
+          "dtype": "uint8"
+        },
+        "image_ids": {
+          "count": 19732,
+          "shape": [
+            19732
+          ],
+          "dtype": "|S24"
+        }
+      }
+    },
+    "preprocessing": {
+      "input_size": [
+        128,
+        64
+      ],
+      "interpolation": "bicubic",
+      "align_corners": false,
+      "antialias": true,
+      "mean": [
+        0.485,
+        0.456,
+        0.406
+      ],
+      "std": [
+        0.229,
+        0.224,
+        0.225
+      ]
+    },
+    "retrieval": {
+      "embedding": "L2-normalized CLS",
+      "similarity": "cosine",
+      "junk_person_id": -1,
+      "exclude_same_identity_camera": true,
+      "ap": "mean precision at relevant ranks",
+      "tie_break": "gallery order"
+    }
+  },
+  "metrics": {
+    "original": {
+      "mAP": 0.020805172098712098,
+      "rank1": 0.05463182897862233,
+      "rank5": 0.12885985748218529,
+      "rank10": 0.1736935866983373,
+      "valid_queries": 3368,
+      "excluded_queries": 0
+    },
+    "low_resolution": {
+      "mAP": 0.018757026206936905,
+      "rank1": 0.042161520190023755,
+      "rank5": 0.11223277909738717,
+      "rank10": 0.1570665083135392,
+      "valid_queries": 3368,
+      "excluded_queries": 0
+    },
+    "mean_mAP": 0.0197810991528245,
+    "mAP_drop_percentage_points": 0.20481458917751932
+  },
+  "cases": {
+    "original": {
+      "success": {
+        "requested": 5,
+        "available": 5
+      },
+      "failure": {
+        "requested": 5,
+        "available": 5
+      }
+    },
+    "low_resolution": {
+      "success": {
+        "requested": 5,
+        "available": 5
+      },
+      "failure": {
+        "requested": 5,
+        "available": 5
+      }
+    }
+  },
+  "ranking_limit": 100
+}

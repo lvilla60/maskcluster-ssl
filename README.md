@@ -6,6 +6,12 @@ Este proyecto adapta el método de *Investigating Self-Supervised Methods for La
 
 El estudio compara dos arquitecturas entrenadas por separado: **Full**, con reconstrucción de regiones enmascaradas, y **Ablation — Sin MIM**, que elimina ese objetivo y conserva el agrupamiento visual global y de parches. Ambas se evaluaron sobre el conjunto de prueba, con consultas en resolución original y reducida.
 
+## Modelo base y estudio de ablación
+
+En el diseño experimental de esta entrega, **Full es el modelo base o de referencia**: conserva los componentes centrales del método del artículo, con las adaptaciones al problema de reidentificación descritas en este documento. **Sin MIM es su ablación**, entrenada de nuevo sin el objetivo de reconstrucción enmascarada y manteniendo la configuración común.
+
+La comparación del laboratorio es **Full frente a Sin MIM**. Para cada arquitectura se evaluaron maestro y estudiante, y la validación seleccionó al estudiante. Full designa el método completo adaptado; no implica una reproducción literal de todos los detalles o resultados del artículo.
+
 ## Arquitecturas comparadas
 
 | Componente | Full | Ablation — Sin MIM |
@@ -97,6 +103,8 @@ Se reportan:
 
 ## Resultados finales
 
+[Guía de los requisitos de la entrega](docs/entrega_laboratorio.md) · [Curvas, resultados y configuraciones efectivas](docs/resultados_experimento.md).
+
 Resultados de los **estudiantes seleccionados mediante validación**. Todas las métricas de la tabla se expresan en porcentaje.
 
 | Arquitectura | Resolución de consulta | mAP (%) | Rank-1 (%) | Rank-5 (%) | Rank-10 (%) |
@@ -119,23 +127,40 @@ Las pérdidas de agrupamiento y reconstrucción disminuyeron durante el entrenam
 
 Los siguientes paneles corresponden al **estudiante Full sobre el conjunto de prueba**. La primera imagen es la consulta y las siguientes son las imágenes de galería ordenadas por similitud. No representan una secuencia temporal.
 
+### Análisis completo de aciertos y fallos
+
+La documentación incluye **cinco aciertos y cinco fallos por arquitectura y por resolución**: cuarenta paneles en total, con la posición de la primera coincidencia correcta, la similitud del primer resultado y una explicación individual de los errores.
+
+| Arquitectura evaluada | Originales | Baja resolución | Documento |
+|---|---|---|---|
+| Full · estudiante | 5 aciertos + 5 fallos | 5 aciertos + 5 fallos | [Ver ejemplos y análisis](docs/resultados_full.md) |
+| Ablation — Sin MIM · estudiante | 5 aciertos + 5 fallos | 5 aciertos + 5 fallos | [Ver ejemplos y análisis](docs/resultados_no_mim.md) |
+
+Los cuatro paneles siguientes son una vista previa. Los documentos enlazados contienen los cuarenta casos y el [índice verificable de ejemplos](docs/indice_ejemplos.csv).
+
 ### Acierto con resolución original
 
-![Consulta original con una coincidencia correcta en la primera posición](assets/results/original_success_01.png)
+![Consulta original con una coincidencia correcta en la primera posición](assets/results/full/original_success_01.png)
 
 ### Fallo con resolución original
 
-![Consulta original cuya primera imagen recuperada corresponde a otra identidad](assets/results/original_failure_02.png)
+![Consulta original cuya primera imagen recuperada corresponde a otra identidad](assets/results/full/original_failure_02.png)
 
 ### Acierto con baja resolución
 
-![Consulta de baja resolución con una coincidencia correcta en la primera posición](assets/results/low_resolution_success_01.png)
+![Consulta de baja resolución con una coincidencia correcta en la primera posición](assets/results/full/low_resolution_success_01.png)
 
 ### Fallo con baja resolución
 
-![Consulta de baja resolución cuya primera imagen recuperada corresponde a otra identidad](assets/results/low_resolution_failure_01.png)
+![Consulta de baja resolución cuya primera imagen recuperada corresponde a otra identidad](assets/results/full/low_resolution_failure_01.png)
 
 En los paneles, `+` indica una coincidencia de identidad y `−` una identidad diferente. **Acierto** significa que el primer resultado es correcto; los demás candidatos del panel pueden ser incorrectos. **Fallo** significa que el primer resultado es incorrecto, aunque una coincidencia válida puede aparecer más abajo en la clasificación. La puntuación mostrada es similitud coseno, no una probabilidad de acierto. Estos casos ilustran resultados individuales y no sustituyen las métricas del conjunto completo.
+
+## Explorador de la arquitectura del artículo
+
+[Ver el archivo del explorador interactivo](Maskcluster_architecture.html). Para utilizar sus controles, descarga el HTML y ábrelo en un navegador, o accede a la [versión web cuando GitHub Pages esté habilitado](https://lvilla60.github.io/maskcluster-ssl/Maskcluster_architecture.html).
+
+El explorador ilustra el **método del artículo original**, con entradas de 224 × 224, diez vistas locales y 8 192 prototipos, además de sus tareas de transferencia. No representa los resultados experimentales de este repositorio. Nuestra adaptación utiliza entradas de 128 × 64, cuatro vistas locales de 96 × 48 y 1 024 prototipos, con evaluación de reidentificación. El HTML distingue ambos contextos y sus ejemplos de código son esquemáticos.
 
 ## Uso del proyecto
 
