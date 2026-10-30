@@ -1,202 +1,205 @@
 # MaskCluster SSL
 
-### Learning person representations without identity labels
+**Aprendizaje autosupervisado para reidentificación de personas y evaluación ante pérdida de resolución.**
 
-A self-supervised person re-identification project that combines **visual clustering, teacher–student learning, and masked image reconstruction**. Given a person image, the model produces an embedding to retrieve matching people across cameras, viewpoints, backgrounds, and image resolutions.
+Este proyecto adapta el método de *Investigating Self-Supervised Methods for Label-Efficient Learning* a la recuperación de imágenes de personas. El modelo aprende representaciones visuales sin utilizar etiquetas de identidad durante el entrenamiento y, en la evaluación, ordena una galería según su similitud con una imagen de consulta.
 
-Built on Market-1501, this project adapts *Investigating Self-Supervised Methods for Label-Efficient Learning* to image-only retrieval. The central method is implemented locally with PyTorch primitives.
+El estudio compara dos arquitecturas entrenadas por separado: **Full**, con reconstrucción de regiones enmascaradas, y **Ablation — Sin MIM**, que elimina ese objetivo y conserva el agrupamiento visual global y de parches. Ambas se evaluaron sobre el conjunto de prueba, con consultas en resolución original y reducida.
 
-**Current milestone:** staged execution and output checks completed locally. **34 tests pass**; three checks are skipped for CUDA and Windows worker permissions. CUDA verification of this version and comparative experiments remain pending.
+## Arquitecturas comparadas
 
-## 1. Project objectives
+| Componente | Full | Ablation — Sin MIM |
+|---|:---:|:---:|
+| Codificador ViT-S/16 | Sí | Sí |
+| Aprendizaje maestro–estudiante | Sí | Sí |
+| Agrupamiento global | Sí | Sí |
+| Agrupamiento de parches | Sí | Sí |
+| Regularización ME-MAX | Sí | Sí |
+| Objetivo de reconstrucción enmascarada (MIM) | Sí | No |
 
-- Learn transferable visual features without identity supervision during training.
-- Compare an EMA teacher with its gradient-trained student.
-- Measure the contribution of patch clustering and masked reconstruction.
-- Evaluate retrieval under original and low-resolution query conditions.
-- Produce reproducible metrics, rankings, and visual error analysis.
+La ablación permite evaluar la contribución del objetivo de reconstrucción. No consiste en desactivarlo después de entrenar: la versión Sin MIM tiene su propio entrenamiento y sus propios pesos.
 
-Identity and camera metadata are used only for auditing and evaluation. They are not model inputs or training targets. Latent clustering prototypes do not represent identity labels.
-
-## 2. Architecture overview
+Durante el aprendizaje, el **estudiante** se actualiza mediante gradientes y el **maestro** mediante una media móvil de sus pesos. En la evaluación se compararon ambos codificadores; la validación seleccionó al estudiante en las dos arquitecturas.
 
 ```mermaid
 flowchart TD
-    A[Training images] --> B[Aligned global crops and local views]
-    B --> C[Clean global views]
-    B --> D[Corrupted global views and local crops]
-    C --> E[EMA teacher]
-    D --> F[Student ViT]
-    E --> G[Global and patch targets]
-    F --> H[Clustering predictions and reconstruction]
-    G --> I[Clustering, ME-MAX and masked L1 objectives]
+    A["Imágenes de entrenamiento"] --> B["Vistas globales y locales"]
+    B --> C["Maestro: vistas globales limpias"]
+    B --> D["Estudiante: vistas enmascaradas y locales"]
+    C --> E["Objetivos de agrupamiento"]
+    D --> F["Predicciones del estudiante"]
+    E --> G["Agrupamiento global y de parches + ME-MAX"]
+    F --> G
+    F --> H["Reconstrucción enmascarada: solo Full"]
+    G --> I["Actualización del estudiante"]
     H --> I
-    I --> J[Update student by gradients]
-    J -. EMA update .-> E
+    I --> J["Actualización del maestro por media móvil"]
 ```
 
-The teacher provides targets from clean global views. The student learns from corrupted global views and local crops. Global clustering encourages consistency across views; aligned patch clustering captures local structure; reconstruction predicts hidden RGB content. ME-MAX encourages diverse cluster assignments.
+Cada imagen se representa mediante un vector CLS de **384 dimensiones**, normalizado con norma L2. La recuperación utiliza similitud coseno.
 
-At retrieval time, either encoder produces a **384-dimensional CLS embedding**, normalized to unit L2 length. Images are ranked by cosine similarity.
+## Datos y separación de etapas
 
-| Component | Current configuration |
-|---|---|
-| Backbone | ViT-S/16, initialized from scratch |
-| Transformer | 12 layers, 384 dimensions, six attention heads |
-| Global input | 128 × 64 RGB; 32 patch tokens plus CLS |
-| Local input | 96 × 48 RGB |
-| Views | Two global crops and four local crops |
-| Prototypes | 1,024 latent clusters |
-| Masking | Configurable; initial ratio 50% |
-| Reconstruction | MLP decoder from summed layers 6, 8, 10 and 12 |
-| Teacher update | Exponential moving average of the student |
-
-Crop count, prototype count, loss weights, and training budget remain provisional until the pilot.
-
-## 3. Experimental variants
-
-| Variant | Global clustering | Patch clustering | Reconstruction |
-|---|:---:|:---:|:---:|
-| `baseline` | ✓ | — | — |
-| `no_mim` | ✓ | ✓ | — |
-| `full` | ✓ | ✓ | ✓ |
-
-Each variant includes the ME-MAX terms corresponding to its active clustering objectives. Shared components start with identical weights. Separate deterministic streams control sample order, crops, photometry, masks, and corruption across variants.
-
-The `no_mim` experiment is a **retrained ablation** of reconstruction. Teacher and student are evaluated separately for all three variants.
-
-## 4. Dataset and evaluation protocol
-
-| Partition | Images | Role |
+| Partición | Imágenes | Uso |
 |---|---:|---|
-| Training | 11,043 | Self-supervised parameter updates |
-| Validation queries | 100 original + 100 low-resolution versions | Configuration and checkpoint selection |
-| Validation gallery | 1,793 | Retrieval evaluation |
-| Test queries | 3,368, with original/LR versions | Reserved final evaluation |
-| Test gallery | 19,732 | Reserved final evaluation |
+| Entrenamiento | 11 043 | Aprendizaje autosupervisado de los pesos |
+| Consultas de validación | 100 | Selección de pesos y codificador |
+| Galería de validación | 1 793 | Referencia para la selección |
+| Consultas de prueba | 3 368 | Evaluación final |
+| Galería de prueba | 19 732 | Recuperación final |
 
-Training and validation counts were audited. Test counts follow the laboratory specification; the test partition remains unopened.
+Los archivos `training.h5`, `validation.h5` y `testing.h5` se organizan en `Input/raw/`. Las imágenes se almacenan como RGB `uint8`, con orden de dimensiones canales × alto × ancho.
 
-Place the supplied HDF5 files under `Input/raw/`, or configure their locations. Readers open files in read-only mode and manage HDF5 handles per process.
+- **Resolución original:** 128 × 64 píxeles.
+- **Consultas de baja resolución:** 32 × 16 píxeles, redimensionadas a 128 × 64 al entrar al codificador.
+- **Galería:** se conserva en resolución original en ambas condiciones.
 
-Both evaluation conditions use the **same selected checkpoint and original gallery**. The pipeline reports **mAP, Rank-1, Rank-5, Rank-10**, and the mAP drop in percentage points. Market-1501 exclusions remove junk and same-identity/same-camera gallery entries; queries without valid positives are excluded from metric denominators.
+El entrenamiento no utiliza identidades como objetivos. Las etiquetas de identidad y cámara se emplean para calcular las métricas de recuperación. La prueba final no se utiliza para actualizar pesos ni seleccionar el codificador.
 
-Teacher and student checkpoints are selected separately using mean validation mAP across original and low-resolution queries. Testing is used only after configuration and checkpoint selection are frozen.
+## Configuración experimental
 
-## 5. Adaptation of the reference method
-
-The implementation preserves the teacher–student mechanism, global and patch clustering, ME-MAX, and masked reconstruction. It adapts the original method through:
-
-- Rectangular person crops instead of square natural-image inputs.
-- An MLP patch decoder instead of the original convolutional reconstruction head.
-- Mean masked L1 with FP32 reductions instead of the literal summed loss; relative weights require validation.
-- Moderate brightness, contrast, saturation, and occasional grayscale augmentations to balance invariance with appearance cues.
-- A configurable dense visible-attention implementation following the information flow of equations 9–11. CLS is treated as visible; masked tokens retain queries but are excluded from keys and values. No computational speedup is claimed.
-
-Standard attention remains available as an alternative. This is an adaptation for person retrieval, not a reproduction of the paper's supervised downstream experiments or published scores.
-
-## 6. Repository layout
-
-| Location | Purpose |
+| Parámetro | Valor |
 |---|---|
-| `configs/` | Training and bounded verification settings |
-| `src/maskcluster_ssl/data/` | HDF5 readers, views, sampling, and provenance |
-| `src/maskcluster_ssl/models/` | ViT, teacher–student model, and reconstruction |
-| `src/maskcluster_ssl/losses/` | Clustering, ME-MAX, and masked L1 |
-| `src/maskcluster_ssl/training/` | Optimization, validation, checkpoints, and runtime metadata |
-| `src/maskcluster_ssl/evaluation/` | Embeddings, retrieval metrics, rankings, and panels |
-| `scripts/` | Audit, training, evaluation, and verification entry points |
-| `tests/` | Unit and integration checks |
-| `slurm/` | Reserved for target-cluster job scripts |
-| `Input/`, `outputs/` | Local datasets and generated artifacts |
+| Inicialización | Desde cero |
+| Arquitectura | ViT-S/16: 12 bloques y 6 cabezas de atención |
+| Dimensión de representación | 384 |
+| Tamaño de parche | 16 × 16 |
+| Vistas por imagen | 2 globales y 4 locales |
+| Tamaño de las vistas locales | 96 × 48 |
+| Prototipos de agrupamiento | 1 024 |
+| Proporción de enmascaramiento | 50 % |
+| Capas utilizadas para reconstrucción | 6, 8, 10 y 12 |
+| Tamaño de lote de entrenamiento | 128 imágenes |
+| Optimizador | AdamW |
+| Tasa de aprendizaje inicial / mínima | 0.0001 / 0.000001 |
+| Regularización de pesos | 0.05 |
+| Calentamiento | 2 épocas |
+| Media móvil del maestro | 0.996 → 1.0 |
+| Precisión mixta | Activada durante el entrenamiento |
+| Semilla | 42 |
+| Épocas ejecutadas por arquitectura | 30 |
 
-Datasets, checkpoints, temporary files, and internal architecture notes are excluded from version control. Run commands from the repository root.
+Los entrenamientos se ejecutaron en Khipu sobre una RTX A6000 compartida. Cada arquitectura completó **2 580 pasos de optimización**. Los pesos evaluados proceden de las primeras 30 épocas de un calendario de aprendizaje previsto para 40; se conserva ese calendario en la configuración y los registros originales.
 
-## 7. Installation and verification
+La adaptación utiliza entradas rectangulares y un decodificador MLP con pérdida L1 sobre las regiones enmascaradas. Por las diferencias de tarea, configuración y presupuesto, los resultados no constituyen una reproducción numérica de los experimentos del artículo.
 
-Use Python 3.11 in an isolated environment. Activate the existing project environment before running commands:
+## Protocolo de evaluación
+
+Los pesos del maestro y del estudiante se seleccionan de forma independiente según el promedio del mAP de validación en las dos resoluciones. A continuación se elige el codificador con mayor puntuación de validación. **El estudiante fue el seleccionado para Full y Sin MIM**, en ambos casos con pesos de la época 25.
+
+La evaluación aplica las exclusiones del protocolo Market-1501: elimina imágenes con identidad descartada (`-1`) y coincidencias de la misma identidad y cámara. Las 3 368 consultas de prueba tuvieron positivos válidos; ninguna fue excluida del cálculo.
+
+Se reportan:
+
+- **mAP — promedio de la precisión media:** resume la posición de las coincidencias correctas a lo largo de la lista recuperada.
+- **Rank-1, Rank-5 y Rank-10:** porcentaje de consultas con al menos una coincidencia correcta entre los primeros 1, 5 o 10 resultados.
+- **Caída de mAP:** diferencia entre la condición original y la de baja resolución, expresada en puntos porcentuales.
+
+## Resultados finales
+
+Resultados de los **estudiantes seleccionados mediante validación**. Todas las métricas de la tabla se expresan en porcentaje.
+
+| Arquitectura | Resolución de consulta | mAP (%) | Rank-1 (%) | Rank-5 (%) | Rank-10 (%) |
+|---|---|---:|---:|---:|---:|
+| Full | Original | 2.110 | 4.899 | 12.559 | 18.141 |
+| Ablation — Sin MIM | Original | **2.162** | **5.523** | **13.450** | **18.379** |
+| Full | Baja resolución | 1.899 | 3.949 | 11.461 | 15.736 |
+| Ablation — Sin MIM | Baja resolución | **1.975** | **4.602** | **12.084** | **16.865** |
+
+| Arquitectura | Mejor mAP medio de validación del estudiante (%) | Caída de mAP en prueba (puntos porcentuales) |
+|---|---:|---:|
+| Full | 10.052 | 0.211 |
+| Ablation — Sin MIM | 10.732 | 0.188 |
+
+**Sin MIM obtuvo mejores resultados en las cuatro métricas y en ambas resoluciones.** Su ventaja de mAP frente a Full fue de 0.053 puntos porcentuales en resolución original y de 0.076 en baja resolución. En este experimento, incorporar reconstrucción no produjo una mejora de recuperación ni una mayor resistencia a la reducción de resolución.
+
+Las pérdidas de agrupamiento y reconstrucción disminuyeron durante el entrenamiento, lo que muestra que la optimización avanzó. Sin embargo, el rendimiento final sigue siendo bajo: reducir las pérdidas no se tradujo en una separación suficiente entre identidades. Las diferencias observadas describen estas dos ejecuciones con una semilla común; no establecen que eliminar MIM sea superior en cualquier configuración.
+
+## Ejemplos de recuperación
+
+Los siguientes paneles corresponden al **estudiante Full sobre el conjunto de prueba**. La primera imagen es la consulta y las siguientes son las imágenes de galería ordenadas por similitud. No representan una secuencia temporal.
+
+### Acierto con resolución original
+
+![Consulta original con una coincidencia correcta en la primera posición](assets/results/original_success_01.png)
+
+### Fallo con resolución original
+
+![Consulta original cuya primera imagen recuperada corresponde a otra identidad](assets/results/original_failure_02.png)
+
+### Acierto con baja resolución
+
+![Consulta de baja resolución con una coincidencia correcta en la primera posición](assets/results/low_resolution_success_01.png)
+
+### Fallo con baja resolución
+
+![Consulta de baja resolución cuya primera imagen recuperada corresponde a otra identidad](assets/results/low_resolution_failure_01.png)
+
+En los paneles, `+` indica una coincidencia de identidad y `−` una identidad diferente. **Acierto** significa que el primer resultado es correcto; los demás candidatos del panel pueden ser incorrectos. **Fallo** significa que el primer resultado es incorrecto, aunque una coincidencia válida puede aparecer más abajo en la clasificación. La puntuación mostrada es similitud coseno, no una probabilidad de acierto. Estos casos ilustran resultados individuales y no sustituyen las métricas del conjunto completo.
+
+## Uso del proyecto
+
+Se recomienda Python 3.11 en un entorno aislado y una instalación de PyTorch adecuada para el equipo. El entorno utilizado en Khipu fue Python 3.11.11, PyTorch 2.11.0 con CUDA 12.8 y torchvision 0.26.0.
+
+Desde la raíz del repositorio:
 
 ```bash
-conda activate MaskCluster_SSL
 python -m pip install -e ".[dev]"
 python -m pip check
 ```
 
-The verified Windows CPU environment uses PyTorch `2.14.1+cpu` and torchvision `0.29.1+cpu`. Direct dependency pins are recorded in `requirements-lock-windows-cpu.txt`; runs also record the full installed-package inventory.
-
-Khipu already has a separate Linux/GPU environment. Keep its agreed dependencies; the Windows CPU pins are not a Linux/CUDA lock. Metadata records the actual package inventory and leaves the direct lock unset when no verified platform/build lock applies.
-
-Run the test suite and bounded real-data check:
+Verificación del código y comprobación acotada con datos reales:
 
 ```bash
 python -B -m pytest tests -q -p no:cacheprovider
-python -B scripts/verify_cpu_smoke.py --config configs/smoke_cpu.yaml --device cpu
+python -B scripts/verify_cpu_smoke.py --config configs/smoke_staged_review.yaml --device cpu
 ```
 
-On the target GPU environment, repeat verification with `--device cuda`.
+Para comprobar un entorno con GPU, se utiliza `--device cuda` en lugar de `--device cpu`.
 
-## 8. Training and checkpoint recovery
-
-After fixing a common pilot budget, launch each variant separately:
+El entrenamiento recibe una configuración YAML. Antes de iniciar una nueva ejecución, deben definirse en ella el tamaño de lote, el presupuesto de épocas, los datos y el directorio de salida.
 
 ```bash
-python -B scripts/train.py --config configs/train.yaml --variant baseline
-python -B scripts/train.py --config configs/train.yaml --variant no_mim
 python -B scripts/train.py --config configs/train.yaml --variant full
+python -B scripts/train.py --config configs/train.yaml --variant no_mim
 ```
 
-The supplied training configuration is provisional; these commands start training, not a smoke test. Use `--resume PATH` to continue from a completed-epoch checkpoint.
+Los comandos anteriores inician nuevas ejecuciones con los valores del archivo indicado. Las configuraciones guardadas dentro de cada ejecución documentan los valores usados para los resultados de este README.
 
-Checkpoints retain model, optimizer, AMP scaler, counters, best scores, configuration, and random states. Training and validation files are identified by SHA-256 signatures. Relocated data paths are accepted when file signatures match; incompatible scientific configuration changes are rejected. Enabling AMP from a CPU checkpoint without scaler state initializes a new scaler and records the transition.
-
-CPU continuation is tested. Cross-device numerical equivalence is not guaranteed, and an interrupted epoch restarts from its checkpoint boundary.
-
-## 9. Evaluation and visual analysis
-
-Evaluate the selected teacher checkpoint on validation; replace `RUN` with the actual run directory:
+Para ejecutar por etapas y continuar desde una época completada, se mantiene fijo el presupuesto total en la configuración:
 
 ```bash
-python -B scripts/evaluate.py --checkpoint outputs/runs/RUN/best_teacher.pt --data Input/raw/validation.h5 --split validation --encoder teacher --output outputs/evaluations/RUN_teacher
+python -B scripts/train.py --config CONFIG.yaml --max-epochs-per-invocation 10
+python -B scripts/train.py --config CONFIG.yaml --resume RUN/last.pt --max-epochs-per-invocation 10
 ```
 
-Use the student checkpoint with `--encoder student` for its comparison. Each call evaluates both query resolutions and exports metrics, rankings, and deterministic panels of up to five Rank-1 successes and five failures per condition. Reports state the available counts when fewer cases exist; interpretation remains a separate analysis step.
+Evaluación de un estudiante seleccionado y exportación de su historial; `RUN` representa el directorio real del entrenamiento y los directorios de salida deben ser nuevos:
 
-Reports identify the actual HDF5 file, gallery signature, group sizes, and preprocessing. `scripts/compare_results.py` builds tables from completed evaluation reports and rejects incompatible datasets or protocols. Supply all six variant/encoder reports for the complete comparison. Test evaluation remains reserved for the final frozen protocol.
-
-## 10. Verification milestone and next steps
-
-**Verified locally:** 34 passing tests, including synthetic staged/continuous equivalence, overflow failure and epoch records. The final real-data smoke performed one step per variant and a separate ViT-S/16 forward/backward without an optimizer step. Evaluation exports were checked with synthetic validation fixtures.
-
-**Khipu status reported by the user:** Python 3.11, torch 2.11.0+cu128 and torchvision 0.26.0+cu128. Pilot 59002 completed one epoch and 1,380 steps using the earlier code. Short shared-GPU batch measurements are still in progress; the comparative batch remains undecided. Neither the pilot nor earlier CUDA checks validate this new version. No remote files were accessed.
-
-**Experimental results are not available yet.** Next, train comparable variants, select configurations on validation, evaluate the reserved test partition, and analyze retrieval successes, failures, and resolution sensitivity.
-
-## Reference
-
-Nandam et al. (2025). *Investigating Self-Supervised Methods for Label-Efficient Learning*. International Journal of Computer Vision, 133, 4522–4537. [Paper](https://doi.org/10.1007/s11263-025-02397-4).
-
-## Ablation output review
-
-Use `configs/smoke_staged_review.yaml` for the latest bounded verification. `configs/pilot_reference.yaml` is a local reference, not the configuration file used by Khipu. The three `configs/comparative_*.yaml` files share all settings except the variant. Their batch and epoch budgets are unset and training is blocked until a common budget is selected and `budget_status` is set to `frozen`. Start each variant from its own seeded initialization.
-
-Epoch history records weighted loss components, final step learning rate, step counts and wall times for training and validation. Resume into a new run preserves source history through the checkpoint boundary and existing best checkpoints. Keep the source run directory with its checkpoint; resuming an older checkpoint when a best checkpoint is newer is rejected.
-
-Export completed epoch curves with `scripts/export_history.py --run RUN --output NEW_OUTPUT`. It reads existing logs only and rejects smoke steps as epochs. `scripts/compare_results.py` exports a table and resolution comparison figures; final comparisons require all six reports, matching scientific configuration, data/protocol, source version and completed common budgets. Selected epochs may differ under the same validation selection rule. `--allow-partial` produces draft diagnostics, while still checking compatibility.
-
-Windows commands must explicitly use the project interpreter:
-
-```powershell
-& "C:\Users\daryl\anaconda3\envs\MaskCluster_SSL\python.exe" -B -m pytest tests -q -p no:cacheprovider
-& "C:\Users\daryl\anaconda3\envs\MaskCluster_SSL\python.exe" -B scripts/verify_cpu_smoke.py --config configs/smoke_ablation_review.yaml --device cpu
-& "C:\Users\daryl\anaconda3\envs\MaskCluster_SSL\python.exe" -B scripts/export_history.py --run RUN --output NEW_OUTPUT
+```bash
+python -B scripts/evaluate.py --checkpoint RUN/best_student.pt --data Input/raw/testing.h5 --split testing --encoder student --output outputs/evaluations/full_student --device cuda
+python -B scripts/export_history.py --run RUN --output outputs/figures/full
 ```
 
-The review report is `outputs/audit/ablation_outputs_review.md`. Synthetic export fixtures live under `outputs/audit/synthetic`; real-data smoke exports are diagnostic only. No completed training epoch or final test evaluation was run locally in this review.
+## Organización y trazabilidad
 
-## Staged execution
+| Directorio | Contenido |
+|---|---|
+| `configs/` | Configuraciones de entrenamiento y verificación |
+| `src/maskcluster_ssl/data/` | Lectura HDF5, transformaciones y procedencia de datos |
+| `src/maskcluster_ssl/models/` | Codificadores, arquitectura maestro–estudiante y reconstrucción |
+| `src/maskcluster_ssl/losses/` | Agrupamiento, ME-MAX y reconstrucción |
+| `src/maskcluster_ssl/training/` | Optimización, validación y recuperación de ejecuciones |
+| `src/maskcluster_ssl/evaluation/` | Representaciones, métricas, clasificaciones y paneles |
+| `scripts/` | Entrenamiento, evaluación y exportación |
+| `tests/` | Pruebas unitarias e integración |
+| `assets/results/` | Ejemplos visuales del README |
+| `Input/raw/` | Datos HDF5 locales |
+| `outputs/` | Historiales, pesos y resultados generados |
 
-Keep `training.epochs` fixed at the total planned budget. `--max-epochs-per-invocation 10` stops successfully after at most ten additional epochs, saving `last.pt`, history, best checkpoints and a paused summary. Resume with the same config and `--resume RUN/last.pt`; the LR/EMA schedule still spans the original total. Changing the total on resume remains forbidden. Recovery is from completed epochs, not interrupted batches.
+Cada ejecución conserva su configuración, historial por época, métricas de validación, mejores pesos y estado para reanudar. Los registros incluyen pasos, tiempos, rendimiento y picos de memoria CUDA del proceso. Los datos y los pesos evaluados se identifican mediante firmas SHA-256.
 
-Non-finite unscaled gradients fail before the optimizer; this strict policy does not use AMP overflow backoff. EMA and step counters advance only after confirmed optimizer execution. Epoch records include processed images, steps, throughput, training/validation times and process CUDA allocated/reserved peaks. Git commit, dirty state and source-byte hash are recorded separately.
+La evaluación final exporta métricas JSON/CSV, clasificaciones por consulta y ejemplos de aciertos y fallos. Los archivos de datos y los pesos del modelo se mantienen fuera del repositorio.
 
-See [staged execution and transfer commands](docs/STAGED_EXECUTION.md) for verification on the existing Khipu environment and a 20-epoch run split into two invocations of ten.
+## Referencia
+
+Nandam et al. (2025). *Investigating Self-Supervised Methods for Label-Efficient Learning*. International Journal of Computer Vision, 133, 4522–4537. [https://doi.org/10.1007/s11263-025-02397-4](https://doi.org/10.1007/s11263-025-02397-4).
